@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cctype>
 #include <cstdlib>
+#include <vector>
 
 using namespace std;
 
@@ -11,9 +12,11 @@ class SymbolTableEntry
 {
 public:
     string symbol;       // The symbol name
-    int Absoluteaddress; // The absolute address of the symbol
+    int absoluteAddress; // The absolute address of the symbol
     int relativeAddress; // The relative address of the symbol
 };
+
+vector<SymbolTableEntry> symbolTable;
 
 class ModuleBaseTableEntry
 {
@@ -21,6 +24,8 @@ public:
     int moduleNumber; // The module number
     int baseAddress;  // The base address of the module
 };
+
+vector<ModuleBaseTableEntry> moduleBaseTable;
 
 class Token
 {
@@ -119,55 +124,64 @@ char *readMARIE(FILE *fp)
     return strdup(token.token->c_str());
 }
 
-int pass1(FILE *fp)
+void printSymbolTable()
 {
+    cout << "Symbol Table" << endl;
+    for (int i = 0; i < symbolTable.size(); i++)
+        cout << symbolTable[i].symbol << "=" << symbolTable[i].absoluteAddress << endl;
+}
+
+void pass1(FILE *fp)
+{
+    int moduleNumber = 0;
+    int instCount = 0;
     while (true)
     {
+        ModuleBaseTableEntry moduleEntry;
+        moduleEntry.moduleNumber = moduleNumber++;
+        moduleEntry.baseAddress = moduleEntry.moduleNumber == 0
+                                      ? 0
+                                      : moduleBaseTable[moduleEntry.moduleNumber - 1].baseAddress + instCount;
+        moduleBaseTable.push_back(moduleEntry);
+
         int defCount = readInteger(fp);
-        cout << "defCount: " << defCount << endl;
         if (defCount == -2)
-            exit(2);
+        {
+            moduleBaseTable.pop_back();
+            return;
+        }
 
         for (int i = 0; i < defCount; i++)
         {
-            // Read a symbol and a relative address
             Token token = getToken(fp);
-            SymbolTableEntry entry;
-            entry.symbol = strdup(token.token->c_str());
-            entry.relativeAddress = readInteger(fp);
-            cout << "Symbol: " << entry.symbol << ", Relative Address: " << entry.relativeAddress << endl;
+            SymbolTableEntry symbolEntry;
+            symbolEntry.symbol = strdup(token.token->c_str());
+            symbolEntry.relativeAddress = readInteger(fp);
+            symbolEntry.absoluteAddress = moduleEntry.baseAddress + symbolEntry.relativeAddress;
+            symbolTable.push_back(symbolEntry);
             free(token.token);
         }
-        cout << "-------------------" << endl;
 
         int useCount = readInteger(fp);
         if (useCount == -2)
             exit(2);
-        cout << "useCount: " << useCount << endl;
 
         for (int i = 0; i < useCount; i++)
         {
-            // Read a symbol
             string *symbol = readSymbol(fp);
             SymbolTableEntry entry;
             entry.symbol = strdup(symbol->c_str());
-            cout << "Symbol: " << entry.symbol << endl;
         }
-        cout << "-------------------" << endl;
 
-        int instCount = readInteger(fp);
+        instCount = readInteger(fp);
         if (instCount == -2)
             exit(2);
-        cout << "instCount: " << instCount << endl;
 
         for (int i = 0; i < instCount; i++)
         {
-            // Read a MARIE instruction
             char *addressMode = readMARIE(fp);
             int instruction = readInteger(fp);
-            cout << "MARIE: " << addressMode << ", Instruction: " << instruction << endl;
         }
-        cout << "--------------------------------------------------" << endl;
     }
 }
 
@@ -175,7 +189,7 @@ int main(int argc, char *argv[])
 {
     if (argc < 2)
     {
-        cout << "Usage: " << argv[0] << " <filename>" << endl;
+        cout << "Error: No input file specified. Usage: " << argv[0] << " <input file>" << endl;
         return 1;
     }
 
@@ -187,6 +201,7 @@ int main(int argc, char *argv[])
     }
 
     pass1(fp);
+    printSymbolTable();
     fclose(fp);
     return 0;
 }
