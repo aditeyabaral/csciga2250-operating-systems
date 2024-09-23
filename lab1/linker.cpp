@@ -14,6 +14,7 @@ public:
     string symbol;       // The symbol name
     int absoluteAddress; // The absolute address of the symbol
     int relativeAddress; // The relative address of the symbol
+    string errorMessage; // The error message for the symbol
 };
 
 vector<SymbolTableEntry> symbolTable;
@@ -43,36 +44,41 @@ Token getToken(FILE *fp)
     static int lineOffset = 0;
     Token result;
 
-    // If there's no current token, read the next line
-    if (token == NULL || *token == '\0')
+    while (true)
     {
-        if (fgets(line, sizeof(line), fp) != NULL)
+        // If there's no current token, read the next line
+        if (token == NULL || *token == '\0')
         {
-            lineNumber++;
-            token = strtok(line, " \t\n");
-            lineOffset = 0;
+            if (fgets(line, sizeof(line), fp) != NULL)
+            {
+                lineNumber++;
+                // Handle the case where the line is empty
+                if (line[0] == '\n' || line[0] == '\0')
+                {
+                    continue; // Skip the empty line and go to the next one
+                }
+                token = strtok(line, " \t\n");
+                lineOffset = 0;
+            }
+            else
+            {
+                result.token = NULL; // No more lines to read
+                return result;
+            }
         }
-        else
+
+        // If there's a token to return, return it
+        if (token != NULL)
         {
-            result.token = NULL; // No more lines to read
+            result.token = new string(token);
+            result.lineOffset = token - line + lineOffset;
+            result.lineNumber = lineNumber;
+
+            // Move to the next token
+            token = strtok(NULL, " \t\n");
             return result;
         }
     }
-    // If there's still a token to return, return it
-    if (token != NULL)
-    {
-        result.token = new string(token);
-        result.lineOffset = token - line + lineOffset;
-        result.lineNumber = lineNumber;
-
-        // Move to the next token
-        token = strtok(NULL, " \t\n");
-
-        return result;
-    }
-    // If no token, return NULL to indicate end of tokens
-    result.token = NULL;
-    return result;
 }
 
 int readInteger(FILE *fp)
@@ -124,11 +130,26 @@ char *readMARIE(FILE *fp)
     return strdup(token.token->c_str());
 }
 
+int addSymbolToSymbolTable(SymbolTableEntry symbolEntry, ModuleBaseTableEntry moduleEntry)
+{
+    for (int i = 0; i < symbolTable.size(); i++)
+    {
+        if (symbolTable[i].symbol == symbolEntry.symbol)
+        {
+            cout << "Warning: Module " << moduleEntry.moduleNumber << ": " << symbolEntry.symbol << " redefinition ignored" << endl;
+            symbolTable[i].errorMessage = "Error: This variable is multiple times defined; first value used";
+            return 1;
+        }
+    }
+    symbolTable.push_back(symbolEntry);
+    return 0;
+}
+
 void printSymbolTable()
 {
     cout << "Symbol Table" << endl;
     for (int i = 0; i < symbolTable.size(); i++)
-        cout << symbolTable[i].symbol << "=" << symbolTable[i].absoluteAddress << endl;
+        cout << symbolTable[i].symbol << "=" << symbolTable[i].absoluteAddress << " " << symbolTable[i].errorMessage << endl;
 }
 
 void pass1(FILE *fp)
@@ -158,7 +179,7 @@ void pass1(FILE *fp)
             symbolEntry.symbol = strdup(token.token->c_str());
             symbolEntry.relativeAddress = readInteger(fp);
             symbolEntry.absoluteAddress = moduleEntry.baseAddress + symbolEntry.relativeAddress;
-            symbolTable.push_back(symbolEntry);
+            addSymbolToSymbolTable(symbolEntry, moduleEntry);
             free(token.token);
         }
 
