@@ -1,30 +1,33 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <iostream>
-#include <string.h>
+#include <fstream>
+#include <string>
+#include <cstring>
+#include <cctype>
+#include <cstdlib>
 
 using namespace std;
 
 class SymbolTableEntry
 {
 public:
-    char *symbol; // The symbol name
-    int address;  // The absolute address of the symbol
+    string symbol;       // The symbol name
+    int Absoluteaddress; // The absolute address of the symbol
+    int relativeAddress; // The relative address of the symbol
 };
 
 class ModuleBaseTableEntry
 {
 public:
     int moduleNumber; // The module number
-    int address;      // The base address of the module
+    int baseAddress;  // The base address of the module
 };
 
 class Token
 {
 public:
-    char *token;    // The token
+    string *token;  // The token
     int lineOffset; // The offset of the token in the line
-    int lineNumber;
+    int lineNumber; // The line number of the token
 };
 
 Token getToken(FILE *fp)
@@ -53,7 +56,7 @@ Token getToken(FILE *fp)
     // If there's still a token to return, return it
     if (token != NULL)
     {
-        result.token = strdup(token);
+        result.token = new string(token);
         result.lineOffset = token - line + lineOffset;
         result.lineNumber = lineNumber;
 
@@ -73,30 +76,29 @@ int readInteger(FILE *fp)
     if (token.token == NULL)
         return -2;
 
-    for (int i = 0; i < strlen(token.token); i++)
+    for (int i = 0; i < token.token->length(); i++)
     {
-        if (!isdigit(token.token[i]))
+        if (!isdigit(token.token->at(i)))
             return -1;
     }
 
-    return atoi(token.token);
+    return std::stoi(*token.token);
 }
 
-char *readSymbol(FILE *fp)
+string *readSymbol(FILE *fp)
 {
     Token token = getToken(fp);
     if (token.token == NULL)
         return NULL;
 
-    if (!isalpha(token.token[0]))
+    if (!isalpha(token.token->at(0)))
         return NULL;
 
-    for (int i = 1; i < strlen(token.token); i++)
+    for (int i = 1; i < token.token->length(); i++)
     {
-        if (!isalnum(token.token[i]))
+        if (!isalnum(token.token->at(i)))
             return NULL;
     }
-
     return token.token;
 }
 
@@ -106,24 +108,23 @@ char *readMARIE(FILE *fp)
     if (token.token == NULL)
         return NULL;
 
-    if (strlen(token.token) != 1 || (token.token[0] != 'A' && token.token[0] != 'I' && token.token[0] != 'R' && token.token[0] != 'E'))
+    if (token.token->length() != 1 ||
+        (token.token->at(0) != 'M' &&
+         token.token->at(0) != 'A' &&
+         token.token->at(0) != 'R' &&
+         token.token->at(0) != 'I' &&
+         token.token->at(0) != 'E'))
         return NULL;
 
-    return token.token;
+    return strdup(token.token->c_str());
 }
 
 int pass1(FILE *fp)
 {
-    // Once you have the getToken() function written above and you verified that your token locations are properly reported,
-    // extract it out of the program above and start writing the linker program. Layer the readInt(), readSymbol(),
-    // readMARIE() functions on top of it by checking that the token has the correct sequence of characters and length (e.g.
-    // integers are all numbers) and test via a simple program. Macros like isdigit(), isalpha(), isalnum()can proof
-    // useful.
-
     while (true)
     {
         int defCount = readInteger(fp);
-        printf("defCount: %d\n", defCount);
+        cout << "defCount: " << defCount << endl;
         if (defCount == -2)
             exit(2);
 
@@ -132,52 +133,56 @@ int pass1(FILE *fp)
             // Read a symbol and a relative address
             Token token = getToken(fp);
             SymbolTableEntry entry;
-            entry.symbol = strdup(token.token);
-            entry.address = readInteger(fp);
-            printf("Symbol: %s, Address: %d\n", entry.symbol, entry.address);
+            entry.symbol = strdup(token.token->c_str());
+            entry.relativeAddress = readInteger(fp);
+            cout << "Symbol: " << entry.symbol << ", Relative Address: " << entry.relativeAddress << endl;
             free(token.token);
         }
-        printf("--------------------\n");
+        cout << "-------------------" << endl;
 
         int useCount = readInteger(fp);
         if (useCount == -2)
             exit(2);
-        printf("useCount: %d\n", useCount);
+        cout << "useCount: " << useCount << endl;
 
         for (int i = 0; i < useCount; i++)
         {
             // Read a symbol
-            char *symbol = readSymbol(fp);
+            string *symbol = readSymbol(fp);
             SymbolTableEntry entry;
-            entry.symbol = strdup(symbol);
-            printf("Symbol: %s\n", entry.symbol);
-            // free(token.token);
+            entry.symbol = strdup(symbol->c_str());
+            cout << "Symbol: " << entry.symbol << endl;
         }
-        printf("--------------------\n");
+        cout << "-------------------" << endl;
 
         int instCount = readInteger(fp);
         if (instCount == -2)
             exit(2);
-        printf("instCount: %d\n", instCount);
+        cout << "instCount: " << instCount << endl;
 
         for (int i = 0; i < instCount; i++)
         {
             // Read a MARIE instruction
             char *addressMode = readMARIE(fp);
             int instruction = readInteger(fp);
-            printf("MARIE: %s, Instruction: %d\n", addressMode, instruction);
+            cout << "MARIE: " << addressMode << ", Instruction: " << instruction << endl;
         }
-        printf("--------------------------------------------------\n");
+        cout << "--------------------------------------------------" << endl;
     }
 }
 
 int main(int argc, char *argv[])
 {
-    FILE *fp = fopen(argv[1], "r");
+    if (argc < 2)
+    {
+        cout << "Usage: " << argv[0] << " <filename>" << endl;
+        return 1;
+    }
 
+    FILE *fp = fopen(argv[1], "r");
     if (fp == NULL)
     {
-        cout << "Error opening file" << endl;
+        cout << "Error opening file: " << argv[1] << endl;
         return 1;
     }
 
