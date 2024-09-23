@@ -1,4 +1,5 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <cstring>
@@ -17,16 +18,12 @@ public:
     string errorMessage; // The error message for the symbol
 };
 
-vector<SymbolTableEntry> symbolTable;
-
 class ModuleBaseTableEntry
 {
 public:
     int moduleNumber; // The module number
     int baseAddress;  // The base address of the module
 };
-
-vector<ModuleBaseTableEntry> moduleBaseTable;
 
 class Token
 {
@@ -35,6 +32,10 @@ public:
     int lineOffset; // The offset of the token in the line
     int lineNumber; // The line number of the token
 };
+
+vector<int> instructions;                     // The instructions
+vector<SymbolTableEntry> symbolTable;         // The symbol table
+vector<ModuleBaseTableEntry> moduleBaseTable; // The module base table
 
 Token getToken(FILE *fp)
 {
@@ -145,11 +146,48 @@ int addSymbolToSymbolTable(SymbolTableEntry symbolEntry, ModuleBaseTableEntry mo
     return 0;
 }
 
+SymbolTableEntry getSymbolFromSymbolTable(string symbol)
+{
+    for (int i = 0; i < symbolTable.size(); i++)
+    {
+        if (symbolTable[i].symbol == symbol)
+            return symbolTable[i];
+    }
+    SymbolTableEntry entry;
+    entry.symbol = "";
+    return entry;
+}
+
+void printDefList(vector<SymbolTableEntry> defList)
+{
+    cout << "Definition List" << endl;
+    for (int i = 0; i < defList.size(); i++)
+        cout << defList[i].symbol << "=" << defList[i].relativeAddress << endl;
+    cout << endl;
+}
+
+void printUseList(vector<SymbolTableEntry> useList)
+{
+    cout << "Use List" << endl;
+    for (int i = 0; i < useList.size(); i++)
+        cout << useList[i].symbol << endl;
+    cout << endl;
+}
+
 void printSymbolTable()
 {
     cout << "Symbol Table" << endl;
     for (int i = 0; i < symbolTable.size(); i++)
         cout << symbolTable[i].symbol << "=" << symbolTable[i].absoluteAddress << " " << symbolTable[i].errorMessage << endl;
+    cout << endl;
+}
+
+void printMemoryMap()
+{
+    cout << "Memory Map" << endl;
+    for (int i = 0; i < instructions.size(); i++)
+        // TODO: print index padded to 3 digits (for index 0, print 000)
+        cout << setw(3) << setfill('0') << i << ": " << instructions[i] << endl;
 }
 
 void pass1(FILE *fp)
@@ -163,14 +201,10 @@ void pass1(FILE *fp)
         moduleEntry.baseAddress = moduleEntry.moduleNumber == 0
                                       ? 0
                                       : moduleBaseTable[moduleEntry.moduleNumber - 1].baseAddress + instCount;
-        moduleBaseTable.push_back(moduleEntry);
 
         int defCount = readInteger(fp);
         if (defCount == -2)
-        {
-            moduleBaseTable.pop_back();
             return;
-        }
 
         for (int i = 0; i < defCount; i++)
         {
@@ -203,6 +237,93 @@ void pass1(FILE *fp)
             char *addressMode = readMARIE(fp);
             int instruction = readInteger(fp);
         }
+        moduleBaseTable.push_back(moduleEntry);
+    }
+}
+
+void pass2(FILE *fp)
+{
+    int moduleNumber = 0;
+    int instCount = 0;
+    while (true)
+    {
+        ModuleBaseTableEntry moduleEntry = moduleBaseTable[moduleNumber++];
+        vector<SymbolTableEntry> currentDefList;
+        vector<SymbolTableEntry> currentUseList;
+
+        int defCount = readInteger(fp);
+        if (defCount == -2)
+            return;
+
+        for (int i = 0; i < defCount; i++)
+        {
+            Token token = getToken(fp);
+            SymbolTableEntry symbolEntry;
+            symbolEntry.symbol = strdup(token.token->c_str());
+            symbolEntry.relativeAddress = readInteger(fp);
+            symbolEntry.absoluteAddress = moduleEntry.baseAddress + symbolEntry.relativeAddress;
+            currentDefList.push_back(symbolEntry);
+            free(token.token);
+        }
+
+        int useCount = readInteger(fp);
+        if (useCount == -2)
+            exit(2);
+
+        for (int i = 0; i < useCount; i++)
+        {
+            string *symbol = readSymbol(fp);
+            SymbolTableEntry entry;
+            entry.symbol = strdup(symbol->c_str());
+            currentUseList.push_back(entry);
+        }
+
+        instCount = readInteger(fp);
+        if (instCount == -2)
+            exit(2);
+
+        for (int i = 0; i < instCount; i++)
+        {
+            char *addressMode = readMARIE(fp);
+            int instruction = readInteger(fp);
+
+            int opcode = instruction / 1000;
+            int operand = instruction % 1000;
+            int updatedInstruction = instruction;
+
+            switch (addressMode[0])
+            {
+            case 'M':
+                updatedInstruction = moduleBaseTable[operand].baseAddress;
+                break;
+            case 'A':
+                if (operand >= 512)
+                {
+                    // TODO: Do something here
+                    ;
+                }
+                break;
+            case 'R':
+                updatedInstruction = instruction + moduleEntry.baseAddress;
+                break;
+            case 'I':
+                if (operand >= 900)
+                {
+                    // TODO: Do something here
+                    ;
+                }
+                break;
+            case 'E':
+                SymbolTableEntry symbolEntry = currentUseList[operand % symbolTable.size()];
+                SymbolTableEntry matchedSymbol = getSymbolFromSymbolTable(symbolEntry.symbol);
+                updatedInstruction = opcode * 1000 + matchedSymbol.absoluteAddress;
+                break;
+            }
+            instructions.push_back(updatedInstruction);
+        }
+        // clear the current def and use lists
+        currentDefList.clear();
+        currentUseList.clear();
     }
 }
 
@@ -223,6 +344,13 @@ int main(int argc, char *argv[])
 
     pass1(fp);
     printSymbolTable();
+
+    // reset the file pointer to the beginning of the file
+    fseek(fp, 0, SEEK_SET);
+
+    pass2(fp);
+    printMemoryMap();
+
     fclose(fp);
     return 0;
 }
