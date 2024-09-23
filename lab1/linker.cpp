@@ -33,7 +33,7 @@ public:
     int lineNumber; // The line number of the token
 };
 
-vector<int> instructions;                     // The instructions
+vector<int> instructions;                     // The instructions in the memory map
 vector<SymbolTableEntry> symbolTable;         // The symbol table
 vector<ModuleBaseTableEntry> moduleBaseTable; // The module base table
 

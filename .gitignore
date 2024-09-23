@@ -1,2 +1,5 @@
-.vscode
+.vscode/
+outdir/
+
 *.out
+linker
