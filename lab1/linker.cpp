@@ -12,10 +12,12 @@ using namespace std;
 class SymbolTableEntry
 {
 public:
+    int moduleNumber;    // The module number it is defined in
     string symbol;       // The symbol name
     int absoluteAddress; // The absolute address of the symbol
     int relativeAddress; // The relative address of the symbol
     string errorMessage; // The error message for the symbol
+    bool used;           // Whether the symbol is used
 };
 
 class ModuleBaseTableEntry
@@ -23,6 +25,7 @@ class ModuleBaseTableEntry
 public:
     int moduleNumber; // The module number
     int baseAddress;  // The base address of the module
+    int length;       // The length of the module (number of instructions)
 };
 
 class Token
@@ -33,9 +36,32 @@ public:
     int lineNumber; // The line number of the token
 };
 
-vector<int> instructions;                     // The instructions in the memory map
+class Instruction
+{
+public:
+    int counter;         // the instruction counter
+    int instruction;     // The instruction
+    string errorMessage; // The error message for the instruction
+};
+
+vector<Instruction> instructions;             // The instructions in the memory map
 vector<SymbolTableEntry> symbolTable;         // The symbol table
 vector<ModuleBaseTableEntry> moduleBaseTable; // The module base table
+
+void __parseerror(int errcode, int linenum, int lineoffset)
+{
+    static char *errstr[] = {
+        "TOO_MANY_DEF_IN_MODULE", // > 16
+        "TOO_MANY_USE_IN_MODULE", // > 16
+        "TOO_MANY_INSTR",         // total num_instr exceeds memory size (512)
+        "NUM_EXPECTED",           // Number expect, anything >= 2^30 is not a number either
+        "SYM_EXPECTED",           // Symbol Expected
+        "MARIE_EXPECTED",         // Addressing Expected which is M/A/R/I/E
+        "SYM_TOO_LONG",           // Symbol Name is too long
+    };
+    cout << "Parse Error line " << linenum << " offset " << lineoffset << ": " << errstr[errcode] << endl;
+    exit(1);
+}
 
 Token getToken(FILE *fp)
 {
@@ -111,6 +137,9 @@ string *readSymbol(FILE *fp)
         if (!isalnum(token.token->at(i)))
             return NULL;
     }
+    if (token.token->length() > 16)
+        return NULL;
+
     return token.token;
 }
 
@@ -146,16 +175,14 @@ int addSymbolToSymbolTable(SymbolTableEntry symbolEntry, ModuleBaseTableEntry mo
     return 0;
 }
 
-SymbolTableEntry getSymbolFromSymbolTable(string symbol)
+SymbolTableEntry *getSymbolFromSymbolTable(string symbol)
 {
     for (int i = 0; i < symbolTable.size(); i++)
     {
         if (symbolTable[i].symbol == symbol)
-            return symbolTable[i];
+            return &symbolTable[i];
     }
-    SymbolTableEntry entry;
-    entry.symbol = "";
-    return entry;
+    return NULL;
 }
 
 void printDefList(vector<SymbolTableEntry> defList)
@@ -186,8 +213,17 @@ void printMemoryMap()
 {
     cout << "Memory Map" << endl;
     for (int i = 0; i < instructions.size(); i++)
-        // TODO: print index padded to 3 digits (for index 0, print 000)
-        cout << setw(3) << setfill('0') << i << ": " << instructions[i] << endl;
+        cout << setw(3) << setfill('0') << i << ": " << instructions[i].instruction << " " << instructions[i].errorMessage << endl;
+    cout << endl;
+}
+
+void printWarningMessages()
+{
+    for (int i = 0; i < symbolTable.size(); i++)
+    {
+        if (!symbolTable[i].used)
+            cout << "Warning: Module " << symbolTable[i].moduleNumber << ": " << symbolTable[i].symbol << " was defined but never used" << endl;
+    }
 }
 
 void pass1(FILE *fp)
@@ -202,6 +238,9 @@ void pass1(FILE *fp)
                                       ? 0
                                       : moduleBaseTable[moduleEntry.moduleNumber - 1].baseAddress + instCount;
 
+        vector<SymbolTableEntry> defList;
+        vector<SymbolTableEntry> useList;
+
         int defCount = readInteger(fp);
         if (defCount == -2)
             return;
@@ -213,7 +252,10 @@ void pass1(FILE *fp)
             symbolEntry.symbol = strdup(token.token->c_str());
             symbolEntry.relativeAddress = readInteger(fp);
             symbolEntry.absoluteAddress = moduleEntry.baseAddress + symbolEntry.relativeAddress;
+            symbolEntry.moduleNumber = moduleEntry.moduleNumber;
+            symbolEntry.used = false;
             addSymbolToSymbolTable(symbolEntry, moduleEntry);
+            defList.push_back(symbolEntry);
             free(token.token);
         }
 
@@ -231,6 +273,7 @@ void pass1(FILE *fp)
         instCount = readInteger(fp);
         if (instCount == -2)
             exit(2);
+        moduleEntry.length = instCount;
 
         for (int i = 0; i < instCount; i++)
         {
@@ -238,6 +281,21 @@ void pass1(FILE *fp)
             int instruction = readInteger(fp);
         }
         moduleBaseTable.push_back(moduleEntry);
+
+        for (int i = 0; i < defList.size(); i++)
+        {
+            SymbolTableEntry *symbolEntry = getSymbolFromSymbolTable(defList[i].symbol);
+            if (symbolEntry->relativeAddress > moduleEntry.length)
+            {
+                cout << "Warning: Module " << moduleEntry.moduleNumber << ": " << symbolEntry->symbol << "=" << symbolEntry->relativeAddress << " valid=[0.." << moduleEntry.length - 1 << "] assume zero relative" << endl;
+                symbolEntry->relativeAddress = 0;
+                symbolEntry->absoluteAddress = moduleEntry.baseAddress + symbolEntry->relativeAddress;
+            }
+        }
+
+        // clear the current def and use list
+        defList.clear();
+        useList.clear();
     }
 }
 
@@ -245,6 +303,8 @@ void pass2(FILE *fp)
 {
     int moduleNumber = 0;
     int instCount = 0;
+    int currentInstCount = 0;
+    cout << "Memory Map" << endl;
     while (true)
     {
         ModuleBaseTableEntry moduleEntry = moduleBaseTable[moduleNumber++];
@@ -284,6 +344,7 @@ void pass2(FILE *fp)
 
         for (int i = 0; i < instCount; i++)
         {
+            string intructionErrorMessage = "";
             char *addressMode = readMARIE(fp);
             int instruction = readInteger(fp);
 
@@ -299,11 +360,16 @@ void pass2(FILE *fp)
             case 'A':
                 if (operand >= 512)
                 {
-                    // TODO: Do something here
-                    ;
+                    intructionErrorMessage = "Error: Absolute address exceeds machine size; zero used";
+                    updatedInstruction = opcode * 1000;
                 }
                 break;
             case 'R':
+                if (operand > moduleEntry.length)
+                {
+                    intructionErrorMessage = "Error: Relative address exceeds module size; relative zero used";
+                    instruction = opcode * 1000;
+                }
                 updatedInstruction = instruction + moduleEntry.baseAddress;
                 break;
             case 'I':
@@ -314,27 +380,77 @@ void pass2(FILE *fp)
                 }
                 break;
             case 'E':
-                SymbolTableEntry symbolEntry = currentUseList[operand % symbolTable.size()];
-                SymbolTableEntry matchedSymbol = getSymbolFromSymbolTable(symbolEntry.symbol);
-                updatedInstruction = opcode * 1000 + matchedSymbol.absoluteAddress;
+                int absoluteAddress = 0;
+                if (operand >= currentUseList.size())
+                {
+                    intructionErrorMessage = "Error: External operand exceeds length of uselist; treated as relative=0";
+                }
+                else
+                {
+                    SymbolTableEntry symbolEntry = currentUseList[operand];
+                    SymbolTableEntry *matchedSymbol = getSymbolFromSymbolTable(symbolEntry.symbol);
+                    if (matchedSymbol == NULL)
+                    {
+                        intructionErrorMessage = "Error: " + symbolEntry.symbol + " is not defined; zero used";
+                        for (int i = 0; i < currentUseList.size(); i++)
+                        {
+                            if (currentUseList[i].symbol == symbolEntry.symbol)
+                            {
+                                currentUseList[i].used = true;
+                                break;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        matchedSymbol->used = true;
+                        absoluteAddress = matchedSymbol->absoluteAddress;
+                        for (int i = 0; i < currentUseList.size(); i++)
+                        {
+                            if (currentUseList[i].symbol == symbolEntry.symbol)
+                            {
+                                currentUseList[i].used = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                updatedInstruction = opcode * 1000 + absoluteAddress;
                 break;
             }
-            instructions.push_back(updatedInstruction);
+            instructions.push_back({currentInstCount++, updatedInstruction, intructionErrorMessage});
         }
-        // clear the current def and use lists
+
+        // print the memory map
+        for (int i = 0; i < instructions.size(); i++)
+            cout << setw(3) << setfill('0') << instructions[i].counter << ": " << instructions[i].instruction << " " << instructions[i].errorMessage << endl;
+
+        // if any symbols in the use list are not used, print a warning message
+        for (int i = 0; i < currentUseList.size(); i++)
+        {
+            if (!currentUseList[i].used)
+                cout << "Warning: Module " << moduleEntry.moduleNumber << ": uselist[" << i << "]=" << currentUseList[i].symbol << " was not used" << endl;
+        }
+
+        // clear the current def, use, and instructions list
         currentDefList.clear();
         currentUseList.clear();
+        instructions.clear();
     }
+    cout << endl
+         << endl;
 }
 
 int main(int argc, char *argv[])
 {
+    // Check if the input file is specified
     if (argc < 2)
     {
         cout << "Error: No input file specified. Usage: " << argv[0] << " <input file>" << endl;
         return 1;
     }
 
+    // Open the input file and check if it exists
     FILE *fp = fopen(argv[1], "r");
     if (fp == NULL)
     {
@@ -342,14 +458,18 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    pass1(fp);
-    printSymbolTable();
+    // Perform the first pass and print the symbol table
+    pass1(fp);          // Pass 1
+    printSymbolTable(); // Print the symbol table
 
     // reset the file pointer to the beginning of the file
     fseek(fp, 0, SEEK_SET);
 
-    pass2(fp);
-    printMemoryMap();
+    // Perform the second pass and print the memory map
+    pass2(fp); // Pass 2
+    // printMemoryMap(); // Print the memory map
+
+    printWarningMessages();
 
     fclose(fp);
     return 0;
