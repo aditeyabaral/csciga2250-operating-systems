@@ -9,33 +9,37 @@
 
 using namespace std;
 
-class SymbolTableEntry
+// A Symbol class to store the symbol information
+class Symbol
 {
 public:
-    int moduleNumber;    // The module number it is defined in
-    string symbol;       // The symbol name
+    string name;         // The symbol name
     int absoluteAddress; // The absolute address of the symbol
     int relativeAddress; // The relative address of the symbol
-    string errorMessage; // The error message for the symbol
+    int moduleNumber;    // The module number it is defined in
     bool used;           // Whether the symbol is used
+    string errorMessage; // The error message for the symbol
 };
 
-class ModuleBaseTableEntry
+// A Module class to store the module information
+class Module
 {
 public:
-    int moduleNumber; // The module number
-    int baseAddress;  // The base address of the module
-    int length;       // The length of the module (number of instructions)
+    int number;      // The module number
+    int size;        // The length of the module (number of instructions)
+    int baseAddress; // The base address of the module
 };
 
+// A Token class to store the token information
 class Token
 {
 public:
-    string *token;  // The token
+    string *token;  // The token TODO: Replace "token" with "value"
     int lineOffset; // The offset of the token in the line
     int lineNumber; // The line number of the token
 };
 
+// An Instruction class to store the instruction information
 class Instruction
 {
 public:
@@ -44,13 +48,14 @@ public:
     string errorMessage; // The error message for the instruction
 };
 
-vector<Instruction> instructions;             // The instructions in the memory map
-vector<SymbolTableEntry> symbolTable;         // The symbol table
-vector<ModuleBaseTableEntry> moduleBaseTable; // The module base table
+// A vector to store the symbol table, module base table, and instructions
+vector<Symbol> symbolTable;     // The symbol table
+vector<Module> moduleBaseTable; // The module base table
 
 void __parseerror(int errcode, int linenum, int lineoffset)
 {
-    static char *errstr[] = {
+    // Error messages as defined in the specification
+    string errstr[] = {
         "TOO_MANY_DEF_IN_MODULE", // > 16
         "TOO_MANY_USE_IN_MODULE", // > 16
         "TOO_MANY_INSTR",         // total num_instr exceeds memory size (512)
@@ -63,9 +68,10 @@ void __parseerror(int errcode, int linenum, int lineoffset)
     exit(1);
 }
 
-Token getToken(FILE *fp)
+Token getToken(FILE *fp) // TODO: Change Token to Token*
 {
-    static char line[1024];
+    // Define the static variables for the line, token, line number, and line offset
+    static char line[1024]; // TODO: Check this limit
     static char *token = NULL;
     static int lineNumber = 0;
     static int lineOffset = 0;
@@ -78,16 +84,16 @@ Token getToken(FILE *fp)
         {
             if (fgets(line, sizeof(line), fp) != NULL)
             {
+                // Increment the line number
                 lineNumber++;
                 // Handle the case where the line is empty
                 if (line[0] == '\n' || line[0] == '\0')
-                {
-                    continue; // Skip the empty line and go to the next one
-                }
-                token = strtok(line, " \t\n");
-                lineOffset = 0;
+                    continue;                  // Skip the empty line and go to the next one
+                token = strtok(line, " \t\n"); // Get the first token in the line
+                lineOffset = 0;                // Reset the line offset
             }
-            else
+            else // No more lines to read
+                 // return NULL;
             {
                 result.token = NULL; // No more lines to read
                 return result;
@@ -97,58 +103,85 @@ Token getToken(FILE *fp)
         // If there's a token to return, return it
         if (token != NULL)
         {
-            result.token = new string(token);
-            result.lineOffset = token - line + lineOffset;
-            result.lineNumber = lineNumber;
+            result.token = new string(token);              // Copy the token to the result
+            result.lineOffset = token - line + lineOffset; // Calculate the line offset
+            result.lineNumber = lineNumber;                // Set the line number
 
             // Move to the next token
-            token = strtok(NULL, " \t\n");
+            token = strtok(NULL, " \t\n"); // Get the next token
             return result;
         }
     }
 }
 
-int readInteger(FILE *fp)
+int *readInteger(FILE *fp)
 {
     Token token = getToken(fp);
-    if (token.token == NULL)
-        return -2;
+    if (token.token == NULL) // No more tokens to read
+        return NULL;
 
     for (int i = 0; i < token.token->length(); i++)
     {
+        // Check if the token is a number
         if (!isdigit(token.token->at(i)))
-            return -1;
+            return NULL;
     }
 
-    return std::stoi(*token.token);
+    // Obtain the integer value of the token
+    int *value = new int(stoi(*token.token));
+
+    // TODO: Check if the integer is decimal
+    return value;
 }
 
-string *readSymbol(FILE *fp)
+string *readSymbolToken(FILE *fp)
 {
     Token token = getToken(fp);
-    if (token.token == NULL)
+    if (token.token == NULL) // No more tokens to read
         return NULL;
 
+    // Check if the token starts with an alphabet
     if (!isalpha(token.token->at(0)))
         return NULL;
 
+    // Check if the token contains only alphanumeric characters
     for (int i = 1; i < token.token->length(); i++)
     {
         if (!isalnum(token.token->at(i)))
             return NULL;
     }
+
+    // Check if the token is too long
     if (token.token->length() > 16)
-        return NULL;
+        __parseerror(6, token.lineNumber, token.lineOffset);
 
     return token.token;
+}
+
+Symbol readSymbol(FILE *fp, Module module, bool isDef = true)
+{
+    // Create a new symbol and return it
+    string *symbolToken = readSymbolToken(fp);
+    Symbol symbol = Symbol();
+    symbol.name = strdup(symbolToken->c_str());
+    symbol.moduleNumber = module.number;
+    symbol.used = false;
+    symbol.errorMessage = "";
+    if (isDef)
+    {
+        symbol.relativeAddress = *readInteger(fp); // TODO: Check for NULL
+        symbol.absoluteAddress = module.baseAddress + symbol.relativeAddress;
+    }
+    return symbol;
 }
 
 char *readMARIE(FILE *fp)
 {
     Token token = getToken(fp);
-    if (token.token == NULL)
+    if (token.token == NULL) // No more tokens to read
         return NULL;
 
+    // Check if the token is a valid MARIE addressing mode
     if (token.token->length() != 1 ||
         (token.token->at(0) != 'M' &&
          token.token->at(0) != 'A' &&
@@ -160,60 +193,46 @@ char *readMARIE(FILE *fp)
     return strdup(token.token->c_str());
 }
 
-int addSymbolToSymbolTable(SymbolTableEntry symbolEntry, ModuleBaseTableEntry moduleEntry)
+int checkSymbolInSymbolTable(string symbolName)
 {
+    // Check if the symbol is already defined
     for (int i = 0; i < symbolTable.size(); i++)
     {
-        if (symbolTable[i].symbol == symbolEntry.symbol)
-        {
-            cout << "Warning: Module " << moduleEntry.moduleNumber << ": " << symbolEntry.symbol << " redefinition ignored" << endl;
-            symbolTable[i].errorMessage = "Error: This variable is multiple times defined; first value used";
-            return 1;
-        }
+        // If the symbol is found, return its index
+        if (symbolTable[i].name == symbolName)
+            return i;
     }
-    symbolTable.push_back(symbolEntry);
-    return 0;
+    return -1;
 }
 
-SymbolTableEntry *getSymbolFromSymbolTable(string symbol)
+Symbol *getSymbolFromSymbolTable(string symbolName)
 {
-    for (int i = 0; i < symbolTable.size(); i++)
-    {
-        if (symbolTable[i].symbol == symbol)
-            return &symbolTable[i];
-    }
+    // Get the symbol from the symbol table if it exists
+    if (checkSymbolInSymbolTable(symbolName) != -1)
+        return &symbolTable[checkSymbolInSymbolTable(symbolName)];
     return NULL;
 }
 
-void printDefList(vector<SymbolTableEntry> defList)
+int addSymbolToSymbolTable(Symbol symbol, Module module)
 {
-    cout << "Definition List" << endl;
-    for (int i = 0; i < defList.size(); i++)
-        cout << defList[i].symbol << "=" << defList[i].relativeAddress << endl;
-    cout << endl;
-}
-
-void printUseList(vector<SymbolTableEntry> useList)
-{
-    cout << "Use List" << endl;
-    for (int i = 0; i < useList.size(); i++)
-        cout << useList[i].symbol << endl;
-    cout << endl;
+    int index = checkSymbolInSymbolTable(symbol.name);
+    if (index != -1)
+    {
+        // Print a warning message
+        cout << "Warning: Module " << module.number << ": " << symbol.name << " redefinition ignored" << endl;
+        symbolTable[index].errorMessage = "Error: This variable is multiple times defined; first value used";
+        return 1;
+    }
+    // Add the symbol to the symbol table
+    symbolTable.push_back(symbol);
+    return 0;
 }
 
 void printSymbolTable()
 {
     cout << "Symbol Table" << endl;
     for (int i = 0; i < symbolTable.size(); i++)
-        cout << symbolTable[i].symbol << "=" << symbolTable[i].absoluteAddress << " " << symbolTable[i].errorMessage << endl;
-    cout << endl;
-}
-
-void printMemoryMap()
-{
-    cout << "Memory Map" << endl;
-    for (int i = 0; i < instructions.size(); i++)
-        cout << setw(3) << setfill('0') << i << ": " << instructions[i].instruction << " " << instructions[i].errorMessage << endl;
+        cout << symbolTable[i].name << "=" << symbolTable[i].absoluteAddress << " " << symbolTable[i].errorMessage << endl;
     cout << endl;
 }
 
@@ -221,229 +240,241 @@ void printWarningMessages()
 {
     for (int i = 0; i < symbolTable.size(); i++)
     {
+        // Print a warning message if the symbol is defined but not used
         if (!symbolTable[i].used)
-            cout << "Warning: Module " << symbolTable[i].moduleNumber << ": " << symbolTable[i].symbol << " was defined but never used" << endl;
+            cout << "Warning: Module " << symbolTable[i].moduleNumber << ": " << symbolTable[i].name << " was defined but never used" << endl;
     }
 }
 
 void pass1(FILE *fp)
 {
-    int moduleNumber = 0;
-    int instCount = 0;
+    int moduleNumber = 0; // The current module number
     while (true)
     {
-        ModuleBaseTableEntry moduleEntry;
-        moduleEntry.moduleNumber = moduleNumber++;
-        moduleEntry.baseAddress = moduleEntry.moduleNumber == 0
-                                      ? 0
-                                      : moduleBaseTable[moduleEntry.moduleNumber - 1].baseAddress + instCount;
+        // Initialize an empty module and its def list
+        Module module;
+        vector<Symbol> defList;
 
-        vector<SymbolTableEntry> defList;
-        vector<SymbolTableEntry> useList;
+        // Read the module number
+        module.number = moduleNumber++;
+        // Compute the base address of the module
+        module.baseAddress = module.number == 0
+                                 ? 0
+                                 : moduleBaseTable[module.number - 1].baseAddress + moduleBaseTable[module.number - 1].size;
 
-        int defCount = readInteger(fp);
-        if (defCount == -2)
-            return;
+        // Read the number of symbol definitions in the module
+        int *defCount = readInteger(fp);
+        if (defCount == NULL)
+            break;
 
-        for (int i = 0; i < defCount; i++)
+        // Iterate through the symbol definitions
+        for (int i = 0; i < *defCount; i++)
         {
-            Token token = getToken(fp);
-            SymbolTableEntry symbolEntry;
-            symbolEntry.symbol = strdup(token.token->c_str());
-            symbolEntry.relativeAddress = readInteger(fp);
-            symbolEntry.absoluteAddress = moduleEntry.baseAddress + symbolEntry.relativeAddress;
-            symbolEntry.moduleNumber = moduleEntry.moduleNumber;
-            symbolEntry.used = false;
-            addSymbolToSymbolTable(symbolEntry, moduleEntry);
-            defList.push_back(symbolEntry);
-            free(token.token);
+            // Read the symbol and add it to the symbol table
+            Symbol symbol = readSymbol(fp, module, true);
+            addSymbolToSymbolTable(symbol, module);
+            defList.push_back(symbol);
         }
 
-        int useCount = readInteger(fp);
-        if (useCount == -2)
-            exit(2);
+        // Read the number of symbol uses in the module
+        int *useCount = readInteger(fp);
+        if (useCount == NULL)
+            break;
 
-        for (int i = 0; i < useCount; i++)
+        // Iterate through the symbol uses
+        for (int i = 0; i < *useCount; i++)
+            Symbol symbol = readSymbol(fp, module, false);
+
+        // Read the number of instructions in the module
+        int *instCount = readInteger(fp);
+        if (instCount == NULL)
+            break;
+
+        // Update the module size
+        module.size = *instCount;
+
+        // Iterate through the instructions
+        for (int i = 0; i < *instCount; i++)
         {
-            string *symbol = readSymbol(fp);
-            SymbolTableEntry entry;
-            entry.symbol = strdup(symbol->c_str());
-        }
-
-        instCount = readInteger(fp);
-        if (instCount == -2)
-            exit(2);
-        moduleEntry.length = instCount;
-
-        for (int i = 0; i < instCount; i++)
-        {
+            // Read the addressing mode and instruction
             char *addressMode = readMARIE(fp);
-            int instruction = readInteger(fp);
+            int *instruction = readInteger(fp);
         }
-        moduleBaseTable.push_back(moduleEntry);
 
+        // Add the module to the module base table
+        moduleBaseTable.push_back(module);
+
+        // Check if the total number of instructions exceeds the memory size and print a warning message
         for (int i = 0; i < defList.size(); i++)
         {
-            SymbolTableEntry *symbolEntry = getSymbolFromSymbolTable(defList[i].symbol);
-            if (symbolEntry->relativeAddress > moduleEntry.length)
+            Symbol *symbol = getSymbolFromSymbolTable(defList[i].name);
+            if (symbol->relativeAddress > module.size)
             {
-                cout << "Warning: Module " << moduleEntry.moduleNumber << ": " << symbolEntry->symbol << "=" << symbolEntry->relativeAddress << " valid=[0.." << moduleEntry.length - 1 << "] assume zero relative" << endl;
-                symbolEntry->relativeAddress = 0;
-                symbolEntry->absoluteAddress = moduleEntry.baseAddress + symbolEntry->relativeAddress;
+                // Print a warning message
+                cout << "Warning: Module " << module.number << ": " << symbol->name << "=" << symbol->relativeAddress << " valid=[0.." << module.size - 1 << "] assume zero relative" << endl;
+                // Update the symbol's relative address and absolute address
+                symbol->relativeAddress = 0;
+                symbol->absoluteAddress = module.baseAddress + symbol->relativeAddress;
             }
         }
 
-        // clear the current def and use list
+        // clear the def list
         defList.clear();
-        useList.clear();
     }
+
+    // Print the symbol table
+    printSymbolTable();
+}
+
+void instructionHandler(char *addressMode, int operand, int opcode, int instruction, Module module, int *globalInstCount, vector<Symbol> *useList, vector<Instruction> *instructions)
+{
+    // Initialize the updated instruction and error message
+    int newInstruction = instruction;
+    string errorMessage = "";
+    // Handle the instruction based on the addressing mode
+    switch (addressMode[0])
+    {
+    case 'M': // Replace with the base address of the module
+        newInstruction = moduleBaseTable[operand].baseAddress;
+        break;
+    case 'A': // Absolute address
+        if (operand >= 512)
+        // If the absolute address exceeds the machine size, print an error message
+        {
+            errorMessage = "Error: Absolute address exceeds machine size; zero used";
+            newInstruction = opcode * 1000;
+        }
+        break;
+    case 'R': // Replace relative address with the base address of the module
+        if (operand > module.size)
+        // If the relative address exceeds the module size, print an error message
+        {
+            errorMessage = "Error: Relative address exceeds module size; relative zero used";
+            instruction = opcode * 1000;
+        }
+        newInstruction = instruction + module.baseAddress;
+        break;
+    case 'I': // Operand is unchanged
+        if (operand >= 900)
+        {
+            ; // TODO: Check this
+        }
+        break;
+    case 'E':                    // Index into the use list with the operand
+        int absoluteAddress = 0; // The default absolute address
+        if (operand >= (*useList).size())
+            // If the external operand exceeds the length of the use list, print an error message
+            errorMessage = "Error: External operand exceeds length of uselist; treated as relative=0";
+        else
+        {
+            Symbol symbol = (*useList)[operand];
+            // Check if the symbol is defined
+            int symbolTableIndex = checkSymbolInSymbolTable(symbol.name); // Check if the symbol is defined
+            if (symbolTableIndex == -1)
+                // If the symbol is not defined, print an error message
+                errorMessage = "Error: " + symbol.name + " is not defined; zero used";
+            else
+            {
+                // Update the symbol's used flag and absolute address
+                symbolTable[symbolTableIndex].used = true;
+                absoluteAddress = symbolTable[symbolTableIndex].absoluteAddress;
+            }
+            // Update the use list to reflect the symbol's usage
+            for (int i = 0; i < (*useList).size(); i++)
+            {
+                if ((*useList)[i].name == symbol.name)
+                {
+                    (*useList)[i].used = true;
+                    break;
+                }
+            }
+        }
+        // Update the instruction with the absolute address
+        newInstruction = opcode * 1000 + absoluteAddress;
+        break;
+    }
+    (*instructions).push_back({*globalInstCount, newInstruction, errorMessage});
+    (*globalInstCount)++;
 }
 
 void pass2(FILE *fp)
 {
-    int moduleNumber = 0;
-    int instCount = 0;
-    int currentInstCount = 0;
+    int moduleNumber = 0;    // The current module number
+    int globalInstCount = 0; // The global instruction counter
     cout << "Memory Map" << endl;
     while (true)
     {
-        ModuleBaseTableEntry moduleEntry = moduleBaseTable[moduleNumber++];
-        vector<SymbolTableEntry> currentDefList;
-        vector<SymbolTableEntry> currentUseList;
+        // Fetch the current module and initialize its def, use, and instructions list
+        Module module = moduleBaseTable[moduleNumber++];
+        vector<Symbol> defList;
+        vector<Symbol> useList;
+        vector<Instruction> instructions;
 
-        int defCount = readInteger(fp);
-        if (defCount == -2)
+        // Read the number of symbol definitions in the module
+        int *defCount = readInteger(fp);
+        if (defCount == NULL)
             return;
 
-        for (int i = 0; i < defCount; i++)
+        // Iterate through the symbol definitions
+        for (int i = 0; i < *defCount; i++)
         {
-            Token token = getToken(fp);
-            SymbolTableEntry symbolEntry;
-            symbolEntry.symbol = strdup(token.token->c_str());
-            symbolEntry.relativeAddress = readInteger(fp);
-            symbolEntry.absoluteAddress = moduleEntry.baseAddress + symbolEntry.relativeAddress;
-            currentDefList.push_back(symbolEntry);
-            free(token.token);
+            // Read the symbol and add it to the def list
+            Symbol symbol = readSymbol(fp, module, true);
+            defList.push_back(symbol);
         }
 
-        int useCount = readInteger(fp);
-        if (useCount == -2)
-            exit(2);
+        // Read the number of symbol uses in the module
+        int *useCount = readInteger(fp);
+        if (useCount == NULL)
+            return;
 
-        for (int i = 0; i < useCount; i++)
+        // Iterate through the symbol uses and add them to the use list
+        for (int i = 0; i < *useCount; i++)
         {
-            string *symbol = readSymbol(fp);
-            SymbolTableEntry entry;
-            entry.symbol = strdup(symbol->c_str());
-            currentUseList.push_back(entry);
+            Symbol symbol = readSymbol(fp, module, false);
+            useList.push_back(symbol);
         }
 
-        instCount = readInteger(fp);
-        if (instCount == -2)
-            exit(2);
+        // Read the number of instructions in the module
+        int *instCount = readInteger(fp);
+        if (instCount == NULL)
+            return;
 
-        for (int i = 0; i < instCount; i++)
+        // Iterate through the instructions
+        for (int i = 0; i < *instCount; i++)
         {
-            string intructionErrorMessage = "";
+            string intructionErrorMessage = ""; // The error message for the instruction
+            // Read the addressing mode and instruction
             char *addressMode = readMARIE(fp);
-            int instruction = readInteger(fp);
-
-            int opcode = instruction / 1000;
-            int operand = instruction % 1000;
-            int updatedInstruction = instruction;
-
-            switch (addressMode[0])
-            {
-            case 'M':
-                updatedInstruction = moduleBaseTable[operand].baseAddress;
-                break;
-            case 'A':
-                if (operand >= 512)
-                {
-                    intructionErrorMessage = "Error: Absolute address exceeds machine size; zero used";
-                    updatedInstruction = opcode * 1000;
-                }
-                break;
-            case 'R':
-                if (operand > moduleEntry.length)
-                {
-                    intructionErrorMessage = "Error: Relative address exceeds module size; relative zero used";
-                    instruction = opcode * 1000;
-                }
-                updatedInstruction = instruction + moduleEntry.baseAddress;
-                break;
-            case 'I':
-                if (operand >= 900)
-                {
-                    // TODO: Do something here
-                    ;
-                }
-                break;
-            case 'E':
-                int absoluteAddress = 0;
-                if (operand >= currentUseList.size())
-                {
-                    intructionErrorMessage = "Error: External operand exceeds length of uselist; treated as relative=0";
-                }
-                else
-                {
-                    SymbolTableEntry symbolEntry = currentUseList[operand];
-                    SymbolTableEntry *matchedSymbol = getSymbolFromSymbolTable(symbolEntry.symbol);
-                    if (matchedSymbol == NULL)
-                    {
-                        intructionErrorMessage = "Error: " + symbolEntry.symbol + " is not defined; zero used";
-                        for (int i = 0; i < currentUseList.size(); i++)
-                        {
-                            if (currentUseList[i].symbol == symbolEntry.symbol)
-                            {
-                                currentUseList[i].used = true;
-                                break;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        matchedSymbol->used = true;
-                        absoluteAddress = matchedSymbol->absoluteAddress;
-                        for (int i = 0; i < currentUseList.size(); i++)
-                        {
-                            if (currentUseList[i].symbol == symbolEntry.symbol)
-                            {
-                                currentUseList[i].used = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                updatedInstruction = opcode * 1000 + absoluteAddress;
-                break;
-            }
-            instructions.push_back({currentInstCount++, updatedInstruction, intructionErrorMessage});
+            int *instruction = readInteger(fp);
+            // Extract the opcode and operand from the instruction
+            int opcode = *instruction / 1000;
+            int operand = *instruction % 1000;
+            // Handle the instruction based on the addressing mode
+            instructionHandler(addressMode, operand, opcode, *instruction, module, &globalInstCount, &useList, &instructions);
         }
 
-        // print the memory map
+        // Print the memory map
         for (int i = 0; i < instructions.size(); i++)
             cout << setw(3) << setfill('0') << instructions[i].counter << ": " << instructions[i].instruction << " " << instructions[i].errorMessage << endl;
 
-        // if any symbols in the use list are not used, print a warning message
-        for (int i = 0; i < currentUseList.size(); i++)
+        // If any symbols in the use list are not used, print a warning message
+        for (int i = 0; i < useList.size(); i++)
         {
-            if (!currentUseList[i].used)
-                cout << "Warning: Module " << moduleEntry.moduleNumber << ": uselist[" << i << "]=" << currentUseList[i].symbol << " was not used" << endl;
+            if (!useList[i].used)
+                cout << "Warning: Module " << module.number << ": uselist[" << i << "]=" << useList[i].name << " was not used" << endl;
         }
 
         // clear the current def, use, and instructions list
-        currentDefList.clear();
-        currentUseList.clear();
+        defList.clear();
+        useList.clear();
         instructions.clear();
     }
-    cout << endl
-         << endl;
 }
 
 int main(int argc, char *argv[])
 {
-    // Check if the input file is specified
+    // Check if the input file has been specified
     if (argc < 2)
     {
         cout << "Error: No input file specified. Usage: " << argv[0] << " <input file>" << endl;
@@ -459,16 +490,15 @@ int main(int argc, char *argv[])
     }
 
     // Perform the first pass and print the symbol table
-    pass1(fp);          // Pass 1
-    printSymbolTable(); // Print the symbol table
+    pass1(fp); // Pass 1
 
     // reset the file pointer to the beginning of the file
     fseek(fp, 0, SEEK_SET);
 
     // Perform the second pass and print the memory map
     pass2(fp); // Pass 2
-    // printMemoryMap(); // Print the memory map
 
+    // Print any warning messages
     printWarningMessages();
 
     fclose(fp);
