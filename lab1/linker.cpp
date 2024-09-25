@@ -34,7 +34,7 @@ public:
 class Token
 {
 public:
-    string *token;  // The token TODO: Replace "token" with "value"
+    string *value;
     int lineOffset; // The offset of the token in the line
     int lineNumber; // The line number of the token
 };
@@ -95,7 +95,7 @@ Token getToken(FILE *fp) // TODO: Change Token to Token*
             else // No more lines to read
                  // return NULL;
             {
-                result.token = NULL; // No more lines to read
+                result.value = NULL; // No more lines to read
                 return result;
             }
         }
@@ -103,7 +103,7 @@ Token getToken(FILE *fp) // TODO: Change Token to Token*
         // If there's a token to return, return it
         if (token != NULL)
         {
-            result.token = new string(token);              // Copy the token to the result
+            result.value = new string(token);              // Copy the token to the result
             result.lineOffset = token - line + lineOffset; // Calculate the line offset
             result.lineNumber = lineNumber;                // Set the line number
 
@@ -117,18 +117,18 @@ Token getToken(FILE *fp) // TODO: Change Token to Token*
 int *readInteger(FILE *fp)
 {
     Token token = getToken(fp);
-    if (token.token == NULL) // No more tokens to read
+    if (token.value == NULL) // No more tokens to read
         return NULL;
 
-    for (int i = 0; i < token.token->length(); i++)
+    for (int i = 0; i < token.value->length(); i++)
     {
         // Check if the token is a number
-        if (!isdigit(token.token->at(i)))
+        if (!isdigit(token.value->at(i)))
             return NULL;
     }
 
     // Obtain the integer value of the token
-    int *value = new int(stoi(*token.token));
+    int *value = new int(stoi(*token.value));
 
     // TODO: Check if the integer is decimal
     return value;
@@ -137,25 +137,25 @@ int *readInteger(FILE *fp)
 string *readSymbolToken(FILE *fp)
 {
     Token token = getToken(fp);
-    if (token.token == NULL) // No more tokens to read
+    if (token.value == NULL) // No more tokens to read
         return NULL;
 
     // Check if the token starts with an alphabet
-    if (!isalpha(token.token->at(0)))
+    if (!isalpha(token.value->at(0)))
         return NULL;
 
     // Check if the token contains only alphanumeric characters
-    for (int i = 1; i < token.token->length(); i++)
+    for (int i = 1; i < token.value->length(); i++)
     {
-        if (!isalnum(token.token->at(i)))
+        if (!isalnum(token.value->at(i)))
             return NULL;
     }
 
     // Check if the token is too long
-    if (token.token->length() > 16)
+    if (token.value->length() > 16)
         __parseerror(6, token.lineNumber, token.lineOffset);
 
-    return token.token;
+    return token.value;
 }
 
 Symbol readSymbol(FILE *fp, Module module, bool isDef = true)
@@ -167,9 +167,11 @@ Symbol readSymbol(FILE *fp, Module module, bool isDef = true)
     symbol.moduleNumber = module.number;
     symbol.used = false;
     symbol.errorMessage = "";
+    // Read the relative address if it's a definition
     if (isDef)
     {
         symbol.relativeAddress = *readInteger(fp); // TODO: Check for NULL
+        // Compute the absolute address of the symbol
         symbol.absoluteAddress = module.baseAddress + symbol.relativeAddress;
     }
     return symbol;
@@ -178,19 +180,19 @@ Symbol readSymbol(FILE *fp, Module module, bool isDef = true)
 char *readMARIE(FILE *fp)
 {
     Token token = getToken(fp);
-    if (token.token == NULL) // No more tokens to read
+    if (token.value == NULL) // No more tokens to read
         return NULL;
 
     // Check if the token is a valid MARIE addressing mode
-    if (token.token->length() != 1 ||
-        (token.token->at(0) != 'M' &&
-         token.token->at(0) != 'A' &&
-         token.token->at(0) != 'R' &&
-         token.token->at(0) != 'I' &&
-         token.token->at(0) != 'E'))
+    if (token.value->length() != 1 ||
+        (token.value->at(0) != 'M' &&
+         token.value->at(0) != 'A' &&
+         token.value->at(0) != 'R' &&
+         token.value->at(0) != 'I' &&
+         token.value->at(0) != 'E'))
         return NULL;
 
-    return strdup(token.token->c_str());
+    return strdup(token.value->c_str());
 }
 
 int checkSymbolInSymbolTable(string symbolName)
@@ -215,6 +217,7 @@ Symbol *getSymbolFromSymbolTable(string symbolName)
 
 int addSymbolToSymbolTable(Symbol symbol, Module module)
 {
+    // Check if the symbol is already defined
     int index = checkSymbolInSymbolTable(symbol.name);
     if (index != -1)
     {
@@ -223,7 +226,7 @@ int addSymbolToSymbolTable(Symbol symbol, Module module)
         symbolTable[index].errorMessage = "Error: This variable is multiple times defined; first value used";
         return 1;
     }
-    // Add the symbol to the symbol table
+    // Else, add the symbol to the symbol table
     symbolTable.push_back(symbol);
     return 0;
 }
@@ -232,6 +235,7 @@ void printSymbolTable()
 {
     cout << "Symbol Table" << endl;
     for (int i = 0; i < symbolTable.size(); i++)
+        // Print the symbol table with the absolute addresses with the error messages
         cout << symbolTable[i].name << "=" << symbolTable[i].absoluteAddress << " " << symbolTable[i].errorMessage << endl;
     cout << endl;
 }
