@@ -75,6 +75,7 @@ Token getToken(FILE *fp) // TODO: Change Token to Token*
     static char *token = NULL;
     static int lineNumber = 0;
     static int lineOffset = 0;
+    static int prevLineLength = 0;
     Token result;
 
     while (true)
@@ -84,18 +85,21 @@ Token getToken(FILE *fp) // TODO: Change Token to Token*
         {
             if (fgets(line, sizeof(line), fp) != NULL)
             {
-                // Increment the line number
-                lineNumber++;
+                lineNumber++;                  // Increment the line number
+                prevLineLength = strlen(line); // Store the length of the line before tokenization
                 // Handle the case where the line is empty
                 if (line[0] == '\n' || line[0] == '\0')
                     continue;                  // Skip the empty line and go to the next one
-                token = strtok(line, " \t\n"); // Get the first token in the line
                 lineOffset = 0;                // Reset the line offset
+                token = strtok(line, " \t\n"); // Get the first token in the line
             }
             else // No more lines to read
-                 // return NULL;
             {
-                result.value = NULL; // No more lines to read
+                // the line offset should be the length of the previous line
+                lineOffset = prevLineLength;
+                result.value = NULL;
+                result.lineNumber = lineNumber;
+                result.lineOffset = lineOffset;
                 return result;
             }
         }
@@ -103,10 +107,10 @@ Token getToken(FILE *fp) // TODO: Change Token to Token*
         // If there's a token to return, return it
         if (token != NULL)
         {
-            result.value = new string(token);              // Copy the token to the result
-            result.lineOffset = token - line + lineOffset; // Calculate the line offset
-            result.lineNumber = lineNumber;                // Set the line number
-
+            lineOffset = token - line + 1;    // Calculate the line offset
+            result.value = new string(token); // Copy the token to the result
+            result.lineOffset = lineOffset;   // Calculate the line offset
+            result.lineNumber = lineNumber;   // Set the line number
             // Move to the next token
             token = strtok(NULL, " \t\n"); // Get the next token
             return result;
@@ -137,12 +141,8 @@ int *readInteger(FILE *fp)
 string *readSymbolToken(FILE *fp)
 {
     Token token = getToken(fp);
-    if (token.value == NULL) // No more tokens to read
-        return NULL;
-
-    // Check if the token starts with an alphabet
-    if (!isalpha(token.value->at(0)))
-        return NULL;
+    if (token.value == NULL || !isalpha(token.value->at(0)))
+        __parseerror(4, token.lineNumber, token.lineOffset);
 
     // Check if the token contains only alphanumeric characters
     for (int i = 1; i < token.value->length(); i++)
@@ -181,7 +181,7 @@ char *readMARIE(FILE *fp)
 {
     Token token = getToken(fp);
     if (token.value == NULL) // No more tokens to read
-        return NULL;
+        __parseerror(5, token.lineNumber, token.lineOffset);
 
     // Check if the token is a valid MARIE addressing mode
     if (token.value->length() != 1 ||
@@ -403,8 +403,9 @@ void instructionHandler(char *addressMode, int operand, int opcode, int instruct
 
 void pass2(FILE *fp)
 {
-    int moduleNumber = 0;    // The current module number
-    int globalInstCount = 0; // The global instruction counter
+    int moduleNumber = 0;     // The current module number
+    int globalInstCount = 0;  // The global instruction counter
+    bool syntaxError = false; // Whether a syntax error has occurred
     cout << "Memory Map" << endl;
     while (true)
     {
@@ -463,10 +464,13 @@ void pass2(FILE *fp)
             cout << setw(3) << setfill('0') << instructions[i].counter << ": " << instructions[i].instruction << " " << instructions[i].errorMessage << endl;
 
         // If any symbols in the use list are not used, print a warning message
-        for (int i = 0; i < useList.size(); i++)
+        if (!syntaxError)
         {
-            if (!useList[i].used)
-                cout << "Warning: Module " << module.number << ": uselist[" << i << "]=" << useList[i].name << " was not used" << endl;
+            for (int i = 0; i < useList.size(); i++)
+            {
+                if (!useList[i].used)
+                    cout << "Warning: Module " << module.number << ": uselist[" << i << "]=" << useList[i].name << " was not used" << endl;
+            }
         }
 
         // clear the current def, use, and instructions list
