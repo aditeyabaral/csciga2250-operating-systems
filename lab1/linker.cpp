@@ -68,9 +68,9 @@ void __parseerror(int errcode, int linenum, int lineoffset)
     exit(1);
 }
 
-Token getToken(FILE *fp) // TODO: Change Token to Token*
+Token getToken(FILE *fp)
 {
-    // Define the static variables for the line, token, line number, and line offset
+    // Define the static variables for the line, token, line number, line offset, and previous line length
     static char line[1024]; // TODO: Check this limit
     static char *token = NULL;
     static int lineNumber = 0;
@@ -118,8 +118,9 @@ Token getToken(FILE *fp) // TODO: Change Token to Token*
     }
 }
 
-int getTotalInstructions()
+int getTotalInstructionsInModuleBaseTable()
 {
+    // Calculate the total number of instructions
     int totalInstructions = 0;
     for (int i = 0; i < moduleBaseTable.size(); i++)
         totalInstructions += moduleBaseTable[i].size;
@@ -149,8 +150,8 @@ int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = fals
     if (checkUseCount && *value > 16)
         __parseerror(1, token.lineNumber, token.lineOffset);
 
-    // Check if the total number of instructions is too large
-    if (checkInstCount && *value + getTotalInstructions() > 512)
+    // Check if the total number of instructions is larger than the memory size
+    if (checkInstCount && *value + getTotalInstructionsInModuleBaseTable() > 512)
         __parseerror(2, token.lineNumber, token.lineOffset);
 
     // TODO: Check if the integer is decimal
@@ -160,6 +161,7 @@ int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = fals
 string *readSymbolToken(FILE *fp)
 {
     Token token = getToken(fp);
+    // Check if the token is NULL or doesn't start with an alphabet
     if (token.value == NULL || !isalpha(token.value->at(0)))
         __parseerror(4, token.lineNumber, token.lineOffset);
 
@@ -350,13 +352,6 @@ void pass1(FILE *fp)
     printSymbolTable();
 }
 
-void calculateOpcodeAndOperandFromInstruction(int instruction, int *opcode, int *operand)
-{
-    // Calculate the opcode and operand from the instruction
-    *opcode = instruction / 1000;
-    *operand = instruction % 1000;
-}
-
 void instructionHandler(char *addressMode, int operand, int opcode, int instruction, Module module, int *globalInstCount, vector<Symbol> *useList, vector<Instruction> *instructions)
 {
     // Initialize the updated instruction and error message
@@ -447,7 +442,7 @@ void instructionHandler(char *addressMode, int operand, int opcode, int instruct
         }
     }
 
-    // TODO: Rewrite without a global instruction counter (use moduleBaseTable.size() instead)
+    // TODO: Rewrite without a global instruction counter (try using moduleBaseTable.size() instead)
     (*instructions).push_back({*globalInstCount, newInstruction, errorMessage});
     (*globalInstCount)++;
 }
