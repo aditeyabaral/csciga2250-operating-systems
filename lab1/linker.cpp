@@ -363,93 +363,90 @@ void instructionHandler(char *addressMode, int operand, int opcode, int instruct
     int newInstruction = instruction;
     string errorMessage = "";
 
-    // Check for illegal operands and opcodes
-    // 10.  If an illegal immediate operand (I) is encountered (i.e. >= 900), print an error and convert the operand value to 999.
-    // 11.  If an illegal opcode is encountered (i.e. op >= 10), print an error and convert the <opcode,operand> to 9999.
-    // 12.  If a module operand is invalid, print an error message and assume module 0.
-    // Rule 11 takes precedence
-
     if (opcode >= 10)
     {
-        cout << "Instruction: " << instruction << "; Address Mode: " << addressMode << "; Operand: " << operand << "; Opcode: " << opcode << endl;
-        errorMessage = "Error: Illegal opcode; treated as 9999";
-        instruction = 9999;
-        calculateOpcodeAndOperandFromInstruction(instruction, &opcode, &operand);
-        cout << "Updated Opcode: " << opcode << "; Updated Operand: " << operand << endl;
-    }
-    else if (operand >= 900)
-    {
-        errorMessage = "Error: Illegal immediate operand; treated as 999";
+        opcode = 9;
         operand = 999;
+        instruction = opcode * 1000 + operand;
+        newInstruction = instruction;
+        errorMessage = "Error: Illegal opcode; treated as 9999";
     }
-    else if (operand >= moduleBaseTable.size())
+    else
     {
-        errorMessage = "Error: Illegal module operand ; treated as module=0";
-        operand = 0;
-    }
 
-    // Handle the instruction based on the addressing mode
-    switch (addressMode[0])
-    {
-    case 'M': // Replace with the base address of the module
-        newInstruction = opcode * 1000 + moduleBaseTable[operand].baseAddress;
-        break;
-    case 'A': // Absolute address
-        if (operand >= 512)
-        // If the absolute address exceeds the machine size, print an error message
+        // Handle the instruction based on the addressing mode
+        switch (addressMode[0])
         {
-            errorMessage = "Error: Absolute address exceeds machine size; zero used";
-            newInstruction = opcode * 1000;
-        }
-        break;
-    case 'R': // Replace relative address with the base address of the module
-        if (operand > module.size)
-        // If the relative address exceeds the module size, print an error message
-        {
-            errorMessage = "Error: Relative address exceeds module size; relative zero used";
-            instruction = opcode * 1000;
-        }
-        newInstruction = instruction + module.baseAddress;
-        break;
-    case 'I': // Operand is unchanged
-        if (operand >= 900)
-        {
-            ; // TODO: Check this
-        }
-        break;
-    case 'E':                    // Index into the use list with the operand
-        int absoluteAddress = 0; // The default absolute address
-        if (operand >= (*useList).size())
-            // If the external operand exceeds the length of the use list, print an error message
-            errorMessage = "Error: External operand exceeds length of uselist; treated as relative=0";
-        else
-        {
-            Symbol symbol = (*useList)[operand];
-            // Check if the symbol is defined
-            int symbolTableIndex = checkSymbolInSymbolTable(symbol.name); // Check if the symbol is defined
-            if (symbolTableIndex == -1)
-                // If the symbol is not defined, print an error message
-                errorMessage = "Error: " + symbol.name + " is not defined; zero used";
+        case 'M': // Replace with the base address of the module
+                  // If the operand exceeds the module base table size, print an error message
+            if (operand >= moduleBaseTable.size())
+            {
+                errorMessage = "Error: Illegal module operand ; treated as module=0";
+                operand = 0;
+            }
+            newInstruction = opcode * 1000 + moduleBaseTable[operand].baseAddress;
+            break;
+        case 'A': // Absolute address
+            if (operand >= 512)
+            // If the absolute address exceeds the machine size, print an error message
+            {
+                errorMessage = "Error: Absolute address exceeds machine size; zero used";
+                newInstruction = opcode * 1000;
+            }
+            break;
+        case 'R': // Replace relative address with the base address of the module
+            if (operand > module.size)
+            // If the relative address exceeds the module size, print an error message
+            {
+                errorMessage = "Error: Relative address exceeds module size; relative zero used";
+                instruction = opcode * 1000;
+            }
+            newInstruction = instruction + module.baseAddress;
+            break;
+        case 'I': // Operand is unchanged
+            // If the immediate operand exceeds 900, print an error message
+            if (operand >= 900)
+            {
+                errorMessage = "Error: Illegal immediate operand; treated as 999";
+                operand = 999;
+                newInstruction = opcode * 1000 + operand;
+            }
+            break;
+        case 'E':                    // Index into the use list with the operand
+            int absoluteAddress = 0; // The default absolute address
+            if (operand >= (*useList).size())
+                // If the external operand exceeds the length of the use list, print an error message
+                errorMessage = "Error: External operand exceeds length of uselist; treated as relative=0";
             else
             {
-                // Update the symbol's used flag and absolute address
-                symbolTable[symbolTableIndex].used = true;
-                absoluteAddress = symbolTable[symbolTableIndex].absoluteAddress;
-            }
-            // Update the use list to reflect the symbol's usage
-            for (int i = 0; i < (*useList).size(); i++)
-            {
-                if ((*useList)[i].name == symbol.name)
+                Symbol symbol = (*useList)[operand];
+                // Check if the symbol is defined
+                int symbolTableIndex = checkSymbolInSymbolTable(symbol.name); // Check if the symbol is defined
+                if (symbolTableIndex == -1)
+                    // If the symbol is not defined, print an error message
+                    errorMessage = "Error: " + symbol.name + " is not defined; zero used";
+                else
                 {
-                    (*useList)[i].used = true;
-                    break;
+                    // Update the symbol's used flag and absolute address
+                    symbolTable[symbolTableIndex].used = true;
+                    absoluteAddress = symbolTable[symbolTableIndex].absoluteAddress;
+                }
+                // Update the use list to reflect the symbol's usage
+                for (int i = 0; i < (*useList).size(); i++)
+                {
+                    if ((*useList)[i].name == symbol.name)
+                    {
+                        (*useList)[i].used = true;
+                        break;
+                    }
                 }
             }
+            // Update the instruction with the absolute address
+            newInstruction = opcode * 1000 + absoluteAddress;
+            break;
         }
-        // Update the instruction with the absolute address
-        newInstruction = opcode * 1000 + absoluteAddress;
-        break;
     }
+
     // TODO: Rewrite without a global instruction counter (use moduleBaseTable.size() instead)
     (*instructions).push_back({*globalInstCount, newInstruction, errorMessage});
     (*globalInstCount)++;
