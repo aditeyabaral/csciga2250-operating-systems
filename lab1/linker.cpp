@@ -118,7 +118,15 @@ Token getToken(FILE *fp) // TODO: Change Token to Token*
     }
 }
 
-int *readInteger(FILE *fp)
+int getTotalInstructions()
+{
+    int totalInstructions = 0;
+    for (int i = 0; i < moduleBaseTable.size(); i++)
+        totalInstructions += moduleBaseTable[i].size;
+    return totalInstructions;
+}
+
+int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = false, bool checkInstCount = false)
 {
     Token token = getToken(fp);
     if (token.value == NULL) // No more tokens to read
@@ -128,11 +136,22 @@ int *readInteger(FILE *fp)
     {
         // Check if the token is a number
         if (!isdigit(token.value->at(i)))
-            return NULL;
+            __parseerror(3, token.lineNumber, token.lineOffset);
     }
 
     // Obtain the integer value of the token
     int *value = new int(stoi(*token.value));
+
+    // Check if the integer is too large
+    if (checkDefCount && *value > 16)
+        __parseerror(0, token.lineNumber, token.lineOffset);
+
+    if (checkUseCount && *value > 16)
+        __parseerror(1, token.lineNumber, token.lineOffset);
+
+    // Check if the total number of instructions is too large
+    if (checkInstCount && *value + getTotalInstructions() > 512)
+        __parseerror(2, token.lineNumber, token.lineOffset);
 
     // TODO: Check if the integer is decimal
     return value;
@@ -252,7 +271,8 @@ void printWarningMessages()
 
 void pass1(FILE *fp)
 {
-    int moduleNumber = 0; // The current module number
+    int moduleNumber = 0;   // The current module number
+    int totalInstCount = 0; // The total number of instructions
     while (true)
     {
         // Initialize an empty module and its def list
@@ -267,7 +287,7 @@ void pass1(FILE *fp)
                                  : moduleBaseTable[module.number - 1].baseAddress + moduleBaseTable[module.number - 1].size;
 
         // Read the number of symbol definitions in the module
-        int *defCount = readInteger(fp);
+        int *defCount = readInteger(fp, true);
         if (defCount == NULL)
             break;
 
@@ -281,7 +301,7 @@ void pass1(FILE *fp)
         }
 
         // Read the number of symbol uses in the module
-        int *useCount = readInteger(fp);
+        int *useCount = readInteger(fp, false, true);
         if (useCount == NULL)
             break;
 
@@ -290,7 +310,7 @@ void pass1(FILE *fp)
             Symbol symbol = readSymbol(fp, module, false);
 
         // Read the number of instructions in the module
-        int *instCount = readInteger(fp);
+        int *instCount = readInteger(fp, false, false, true);
         if (instCount == NULL)
             break;
 
@@ -330,16 +350,49 @@ void pass1(FILE *fp)
     printSymbolTable();
 }
 
+void calculateOpcodeAndOperandFromInstruction(int instruction, int *opcode, int *operand)
+{
+    // Calculate the opcode and operand from the instruction
+    *opcode = instruction / 1000;
+    *operand = instruction % 1000;
+}
+
 void instructionHandler(char *addressMode, int operand, int opcode, int instruction, Module module, int *globalInstCount, vector<Symbol> *useList, vector<Instruction> *instructions)
 {
     // Initialize the updated instruction and error message
     int newInstruction = instruction;
     string errorMessage = "";
+
+    // Check for illegal operands and opcodes
+    // 10.  If an illegal immediate operand (I) is encountered (i.e. >= 900), print an error and convert the operand value to 999.
+    // 11.  If an illegal opcode is encountered (i.e. op >= 10), print an error and convert the <opcode,operand> to 9999.
+    // 12.  If a module operand is invalid, print an error message and assume module 0.
+    // Rule 11 takes precedence
+
+    if (opcode >= 10)
+    {
+        cout << "Instruction: " << instruction << "; Address Mode: " << addressMode << "; Operand: " << operand << "; Opcode: " << opcode << endl;
+        errorMessage = "Error: Illegal opcode; treated as 9999";
+        instruction = 9999;
+        calculateOpcodeAndOperandFromInstruction(instruction, &opcode, &operand);
+        cout << "Updated Opcode: " << opcode << "; Updated Operand: " << operand << endl;
+    }
+    else if (operand >= 900)
+    {
+        errorMessage = "Error: Illegal immediate operand; treated as 999";
+        operand = 999;
+    }
+    else if (operand >= moduleBaseTable.size())
+    {
+        errorMessage = "Error: Illegal module operand ; treated as module=0";
+        operand = 0;
+    }
+
     // Handle the instruction based on the addressing mode
     switch (addressMode[0])
     {
     case 'M': // Replace with the base address of the module
-        newInstruction = moduleBaseTable[operand].baseAddress;
+        newInstruction = opcode * 1000 + moduleBaseTable[operand].baseAddress;
         break;
     case 'A': // Absolute address
         if (operand >= 512)
@@ -397,6 +450,7 @@ void instructionHandler(char *addressMode, int operand, int opcode, int instruct
         newInstruction = opcode * 1000 + absoluteAddress;
         break;
     }
+    // TODO: Rewrite without a global instruction counter (use moduleBaseTable.size() instead)
     (*instructions).push_back({*globalInstCount, newInstruction, errorMessage});
     (*globalInstCount)++;
 }
@@ -416,7 +470,7 @@ void pass2(FILE *fp)
         vector<Instruction> instructions;
 
         // Read the number of symbol definitions in the module
-        int *defCount = readInteger(fp);
+        int *defCount = readInteger(fp, true);
         if (defCount == NULL)
             return;
 
@@ -429,7 +483,7 @@ void pass2(FILE *fp)
         }
 
         // Read the number of symbol uses in the module
-        int *useCount = readInteger(fp);
+        int *useCount = readInteger(fp, false, true);
         if (useCount == NULL)
             return;
 
@@ -441,7 +495,7 @@ void pass2(FILE *fp)
         }
 
         // Read the number of instructions in the module
-        int *instCount = readInteger(fp);
+        int *instCount = readInteger(fp, false, false, true);
         if (instCount == NULL)
             return;
 
@@ -461,7 +515,9 @@ void pass2(FILE *fp)
 
         // Print the memory map
         for (int i = 0; i < instructions.size(); i++)
-            cout << setw(3) << setfill('0') << instructions[i].counter << ": " << instructions[i].instruction << " " << instructions[i].errorMessage << endl;
+            cout << setw(3) << setfill('0') << instructions[i].counter << ": "
+                 << setw(4) << setfill('0') << instructions[i].instruction << " "
+                 << instructions[i].errorMessage << endl;
 
         // If any symbols in the use list are not used, print a warning message
         if (!syntaxError)
