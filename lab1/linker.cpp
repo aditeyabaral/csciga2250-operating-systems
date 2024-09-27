@@ -154,7 +154,6 @@ int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = fals
     if (checkInstCount && *value + getTotalInstructionsInModuleBaseTable() > 512)
         __parseerror(2, token.lineNumber, token.lineOffset);
 
-    // TODO: Check if the integer is decimal
     return value;
 }
 
@@ -453,6 +452,12 @@ void pass2(FILE *fp)
     int globalInstCount = 0;  // The global instruction counter
     bool syntaxError = false; // Whether a syntax error has occurred
     cout << "Memory Map" << endl;
+
+    // Check if the module base table is empty
+    if (moduleBaseTable.size() == 0)
+        return;
+
+    // Begin the second pass
     while (true)
     {
         // Fetch the current module and initialize its def, use, and instructions list
