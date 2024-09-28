@@ -4,6 +4,7 @@
 #include <string>
 #include <cstring>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <vector>
 
@@ -51,6 +52,9 @@ public:
 // A vector to store the symbol table, module base table, and instructions
 vector<Symbol> symbolTable;     // The symbol table
 vector<Module> moduleBaseTable; // The module base table
+
+// Compute 2^30 for the maximum integer value
+const int MAX_INTEGER_VALUE = pow(2, 30);
 
 void __parseerror(int errcode, int linenum, int lineoffset)
 {
@@ -149,10 +153,13 @@ int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = fals
     // Obtain the integer value of the token
     int *value = new int(stoi(*token.value));
 
-    // Check if the integer is too large
+    // Check if the integer is >= 2^30
+    if (*value >= MAX_INTEGER_VALUE)
+        __parseerror(3, token.lineNumber, token.lineOffset);
+
+    // Check if the number of definitions or uses is larger than 16
     if (checkDefCount && *value > 16)
         __parseerror(0, token.lineNumber, token.lineOffset);
-
     if (checkUseCount && *value > 16)
         __parseerror(1, token.lineNumber, token.lineOffset);
 
@@ -174,7 +181,7 @@ string *readSymbolToken(FILE *fp)
     for (int i = 1; i < token.value->length(); i++)
     {
         if (!isalnum(token.value->at(i)))
-            return NULL;
+            __parseerror(4, token.lineNumber, token.lineOffset);
     }
 
     // Check if the token is too long
@@ -206,17 +213,15 @@ Symbol readSymbol(FILE *fp, Module module, bool isDef = true)
 char *readMARIE(FILE *fp)
 {
     Token token = getToken(fp);
-    if (token.value == NULL) // No more tokens to read
-        __parseerror(5, token.lineNumber, token.lineOffset);
-
-    // Check if the token is a valid MARIE addressing mode
-    if (token.value->length() != 1 ||
+    // Check if there are no more tokens to read
+    // or the token is not a valid MARIE addressing mode
+    if (token.value == NULL || token.value->length() != 1 ||
         (token.value->at(0) != 'M' &&
          token.value->at(0) != 'A' &&
          token.value->at(0) != 'R' &&
          token.value->at(0) != 'I' &&
          token.value->at(0) != 'E'))
-        return NULL;
+        __parseerror(5, token.lineNumber, token.lineOffset);
 
     return strdup(token.value->c_str());
 }
@@ -241,20 +246,18 @@ Symbol *getSymbolFromSymbolTable(string symbolName)
     return NULL;
 }
 
-int addSymbolToSymbolTable(Symbol symbol, Module module)
+bool addSymbolToSymbolTable(Symbol symbol, Module module)
 {
     // Check if the symbol is already defined
     int index = checkSymbolInSymbolTable(symbol.name);
     if (index != -1)
     {
-        // Print a warning message
-        cout << "Warning: Module " << module.number << ": " << symbol.name << " redefinition ignored" << endl;
         symbolTable[index].errorMessage = "Error: This variable is multiple times defined; first value used";
-        return 1;
+        return true;
     }
     // Else, add the symbol to the symbol table
     symbolTable.push_back(symbol);
-    return 0;
+    return false;
 }
 
 void printSymbolTable()
@@ -264,16 +267,6 @@ void printSymbolTable()
         // Print the symbol table with the absolute addresses with the error messages
         cout << symbolTable[i].name << "=" << symbolTable[i].absoluteAddress << " " << symbolTable[i].errorMessage << endl;
     cout << endl;
-}
-
-void printWarningMessages()
-{
-    for (int i = 0; i < symbolTable.size(); i++)
-    {
-        // Print a warning message if the symbol is defined but not used
-        if (!symbolTable[i].used)
-            cout << "Warning: Module " << symbolTable[i].moduleNumber << ": " << symbolTable[i].name << " was defined but never used" << endl;
-    }
 }
 
 void pass1(FILE *fp)
@@ -303,7 +296,8 @@ void pass1(FILE *fp)
         {
             // Read the symbol and add it to the symbol table
             Symbol symbol = readSymbol(fp, module, true);
-            addSymbolToSymbolTable(symbol, module);
+            bool existingSymbolCheck = addSymbolToSymbolTable(symbol, module);
+            symbol.used = existingSymbolCheck;
             defList.push_back(symbol);
         }
 
@@ -331,18 +325,23 @@ void pass1(FILE *fp)
         // Add the module to the module base table
         moduleBaseTable.push_back(module);
 
-        // Check if the total number of instructions exceeds the memory size and print a warning message
         for (int i = 0; i < defList.size(); i++)
         {
-            Symbol *symbol = getSymbolFromSymbolTable(defList[i].name);
-            if (symbol->relativeAddress > module.size)
+            // Check if the total number of instructions exceeds the memory size and print a warning message
+            if (defList[i].relativeAddress > module.size && !defList[i].used)
             {
                 // Print a warning message
-                cout << "Warning: Module " << module.number << ": " << symbol->name << "=" << symbol->relativeAddress << " valid=[0.." << module.size - 1 << "] assume zero relative" << endl;
-                // Update the symbol's relative address and absolute address
-                symbol->relativeAddress = 0;
-                symbol->absoluteAddress = module.baseAddress + symbol->relativeAddress;
+                cout << "Warning: Module " << module.number << ": " << defList[i].name << "=" << defList[i].relativeAddress << " valid=[0.." << module.size - 1 << "] assume zero relative" << endl;
+                // Update the symbol's relative address and absolute address in the symbol table
+                defList[i].relativeAddress = 0;
+                defList[i].absoluteAddress = module.baseAddress + defList[i].relativeAddress;
+                Symbol *symbol = getSymbolFromSymbolTable(defList[i].name);
+                symbol->relativeAddress = defList[i].relativeAddress;
+                symbol->absoluteAddress = defList[i].absoluteAddress;
             }
+            // Check if the symbol was defined multiple times
+            else if (defList[i].used)
+                cout << "Warning: Module " << module.number << ": " << defList[i].name << " redefinition ignored" << endl;
         }
 
         // clear the def list
@@ -464,21 +463,30 @@ void pass2(FILE *fp)
     {
         // Fetch the current module and initialize its def, use, and instructions list
         Module module = moduleBaseTable[moduleNumber++];
-        vector<Symbol> defList;
+        // vector<Symbol> defList;
         vector<Symbol> useList;
         vector<Instruction> instructions;
 
         // Read the number of symbol definitions in the module
         int *defCount = readInteger(fp, true, false, false, true);
         if (defCount == NULL)
-            return; // No more tokens to read, EOF reached
+        {
+            // EOF reached, no more tokens to read
+            // Print all the symbols that are defined but not used
+            for (int i = 0; i < symbolTable.size(); i++)
+            {
+                if (!symbolTable[i].used)
+                    cout << "Warning: Module " << symbolTable[i].moduleNumber << ": " << symbolTable[i].name << " was defined but never used" << endl;
+            }
+            return;
+        }
 
         // Iterate through the symbol definitions
         for (int i = 0; i < *defCount; i++)
         {
             // Read the symbol and add it to the def list
             Symbol symbol = readSymbol(fp, module, true);
-            defList.push_back(symbol);
+            // defList.push_back(symbol);
         }
 
         // Read the number of symbol uses in the module
@@ -525,7 +533,7 @@ void pass2(FILE *fp)
         }
 
         // clear the current def, use, and instructions list
-        defList.clear();
+        // defList.clear();
         useList.clear();
         instructions.clear();
     }
@@ -556,9 +564,6 @@ int main(int argc, char *argv[])
 
     // Perform the second pass and print the memory map
     pass2(fp); // Pass 2
-
-    // Print any warning messages
-    printWarningMessages();
 
     fclose(fp);
     return 0;
