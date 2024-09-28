@@ -1,0 +1,21 @@
+linker=<../linker > outdir=<../outdir/>
+../linker input-1
+../linker input-2
+../linker input-3
+../linker input-4
+../linker input-5
+../linker input-6
+../linker input-7
+../linker input-8
+../linker input-9
+../linker input-10
+../linker input-11
+../linker input-12
+../linker input-13
+../linker input-14
+../linker input-15
+../linker input-16
+../linker input-17
+../linker input-18
+../linker input-19
+../linker input-20

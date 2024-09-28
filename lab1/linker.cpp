@@ -18,7 +18,7 @@ public:
     int absoluteAddress; // The absolute address of the symbol
     int relativeAddress; // The relative address of the symbol
     int moduleNumber;    // The module number it is defined in
-    bool used;           // Whether the symbol is used
+    bool used;           // Whether the symbol has been used or redefined
     string errorMessage; // The error message for the symbol
 };
 
@@ -461,9 +461,8 @@ void pass2(FILE *fp)
     // Begin the second pass
     while (true)
     {
-        // Fetch the current module and initialize its def, use, and instructions list
+        // Fetch the current module and initialize its use and instructions list
         Module module = moduleBaseTable[moduleNumber++];
-        // vector<Symbol> defList;
         vector<Symbol> useList;
         vector<Instruction> instructions;
 
@@ -483,11 +482,8 @@ void pass2(FILE *fp)
 
         // Iterate through the symbol definitions
         for (int i = 0; i < *defCount; i++)
-        {
-            // Read the symbol and add it to the def list
+            // Read the symbol
             Symbol symbol = readSymbol(fp, module, true);
-            // defList.push_back(symbol);
-        }
 
         // Read the number of symbol uses in the module
         int *useCount = readInteger(fp, false, true);
@@ -532,8 +528,7 @@ void pass2(FILE *fp)
             }
         }
 
-        // clear the current def, use, and instructions list
-        // defList.clear();
+        // clear the current use and instructions list
         useList.clear();
         instructions.clear();
     }
