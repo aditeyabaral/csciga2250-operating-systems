@@ -90,7 +90,7 @@ Token getToken(FILE *fp)
                 // Handle the case where the line is empty
                 if (line[0] == '\n' || line[0] == '\0')
                     continue;                  // Skip the empty line and go to the next one
-                lineOffset = 0;                // Reset the line offset
+                lineOffset = 1;                // Reset the line offset
                 token = strtok(line, " \t\n"); // Get the first token in the line
             }
             else // No more lines to read
@@ -100,6 +100,7 @@ Token getToken(FILE *fp)
                 result.value = NULL;
                 result.lineNumber = lineNumber;
                 result.lineOffset = lineOffset;
+                lineNumber = 0; // Reset the line number
                 return result;
             }
         }
@@ -127,11 +128,16 @@ int getTotalInstructionsInModuleBaseTable()
     return totalInstructions;
 }
 
-int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = false, bool checkInstCount = false)
+int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = false, bool checkInstCount = false, bool canBeNull = false)
 {
     Token token = getToken(fp);
     if (token.value == NULL) // No more tokens to read
-        return NULL;
+    {
+        if (!canBeNull)
+            // If the token is NULL and it cannot be NULL, throw an error
+            __parseerror(3, token.lineNumber, token.lineOffset);
+        return NULL; // This indicates EOF
+    }
 
     for (int i = 0; i < token.value->length(); i++)
     {
@@ -288,9 +294,9 @@ void pass1(FILE *fp)
                                  : moduleBaseTable[module.number - 1].baseAddress + moduleBaseTable[module.number - 1].size;
 
         // Read the number of symbol definitions in the module
-        int *defCount = readInteger(fp, true);
+        int *defCount = readInteger(fp, true, false, false, true);
         if (defCount == NULL)
-            break;
+            break; // No more tokens to read, EOF reached
 
         // Iterate through the symbol definitions
         for (int i = 0; i < *defCount; i++)
@@ -303,8 +309,6 @@ void pass1(FILE *fp)
 
         // Read the number of symbol uses in the module
         int *useCount = readInteger(fp, false, true);
-        if (useCount == NULL)
-            break;
 
         // Iterate through the symbol uses
         for (int i = 0; i < *useCount; i++)
@@ -312,8 +316,6 @@ void pass1(FILE *fp)
 
         // Read the number of instructions in the module
         int *instCount = readInteger(fp, false, false, true);
-        if (instCount == NULL)
-            break;
 
         // Update the module size
         module.size = *instCount;
@@ -467,9 +469,9 @@ void pass2(FILE *fp)
         vector<Instruction> instructions;
 
         // Read the number of symbol definitions in the module
-        int *defCount = readInteger(fp, true);
+        int *defCount = readInteger(fp, true, false, false, true);
         if (defCount == NULL)
-            return;
+            return; // No more tokens to read, EOF reached
 
         // Iterate through the symbol definitions
         for (int i = 0; i < *defCount; i++)
@@ -481,8 +483,6 @@ void pass2(FILE *fp)
 
         // Read the number of symbol uses in the module
         int *useCount = readInteger(fp, false, true);
-        if (useCount == NULL)
-            return;
 
         // Iterate through the symbol uses and add them to the use list
         for (int i = 0; i < *useCount; i++)
@@ -493,8 +493,6 @@ void pass2(FILE *fp)
 
         // Read the number of instructions in the module
         int *instCount = readInteger(fp, false, false, true);
-        if (instCount == NULL)
-            return;
 
         // Iterate through the instructions
         for (int i = 0; i < *instCount; i++)
