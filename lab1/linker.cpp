@@ -49,7 +49,7 @@ public:
     string errorMessage; // The error message for the instruction
 };
 
-// A vector to store the symbol table, module base table, and instructions
+// A vector to store the symbol table and module base table
 vector<Symbol> symbolTable;     // The symbol table
 vector<Module> moduleBaseTable; // The module base table
 
@@ -138,7 +138,7 @@ int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = fals
     if (token.value == NULL) // No more tokens to read
     {
         if (!canBeNull)
-            // If the token is NULL and it cannot be NULL, throw an error
+            // If the token is NULL and it should not be NULL, throw an error
             __parseerror(3, token.lineNumber, token.lineOffset);
         return NULL; // This indicates EOF
     }
@@ -170,13 +170,15 @@ int *readInteger(FILE *fp, bool checkDefCount = false, bool checkUseCount = fals
     return value;
 }
 
-string *readSymbolToken(FILE *fp)
+Symbol readSymbol(FILE *fp, Module module, bool isDef = true)
 {
     Token token = getToken(fp);
     // Check if the token is NULL or doesn't start with an alphabet
     if (token.value == NULL || !isalpha(token.value->at(0)))
         __parseerror(4, token.lineNumber, token.lineOffset);
-
+    // Check if the token is too long
+    if (token.value->length() > 16)
+        __parseerror(6, token.lineNumber, token.lineOffset);
     // Check if the token contains only alphanumeric characters
     for (int i = 1; i < token.value->length(); i++)
     {
@@ -184,37 +186,27 @@ string *readSymbolToken(FILE *fp)
             __parseerror(4, token.lineNumber, token.lineOffset);
     }
 
-    // Check if the token is too long
-    if (token.value->length() > 16)
-        __parseerror(6, token.lineNumber, token.lineOffset);
-
-    return token.value;
-}
-
-Symbol readSymbol(FILE *fp, Module module, bool isDef = true)
-{
-    // Create a new symbol and return it
-    string *symbolToken = readSymbolToken(fp);
+    // Create a new symbol
     Symbol symbol = Symbol();
-    symbol.name = strdup(symbolToken->c_str());
+    symbol.name = strdup(token.value->c_str());
     symbol.moduleNumber = module.number;
     symbol.used = false;
     symbol.errorMessage = "";
+
     // Read the relative address if it's a definition
     if (isDef)
     {
-        symbol.relativeAddress = *readInteger(fp); // TODO: Check for NULL
+        symbol.relativeAddress = *readInteger(fp);
         // Compute the absolute address of the symbol
         symbol.absoluteAddress = module.baseAddress + symbol.relativeAddress;
     }
     return symbol;
 }
 
-char *readMARIE(FILE *fp)
+char readMARIE(FILE *fp)
 {
     Token token = getToken(fp);
-    // Check if there are no more tokens to read
-    // or the token is not a valid MARIE addressing mode
+    // Check if there are no more tokens to read or the token is not a valid MARIE addressing mode
     if (token.value == NULL || token.value->length() != 1 ||
         (token.value->at(0) != 'M' &&
          token.value->at(0) != 'A' &&
@@ -223,7 +215,7 @@ char *readMARIE(FILE *fp)
          token.value->at(0) != 'E'))
         __parseerror(5, token.lineNumber, token.lineOffset);
 
-    return strdup(token.value->c_str());
+    return token.value->at(0);
 }
 
 int checkSymbolInSymbolTable(string symbolName)
@@ -318,7 +310,7 @@ void pass1(FILE *fp)
         for (int i = 0; i < *instCount; i++)
         {
             // Read the addressing mode and instruction
-            char *addressMode = readMARIE(fp);
+            char addressMode = readMARIE(fp);
             int *instruction = readInteger(fp);
         }
 
@@ -352,7 +344,7 @@ void pass1(FILE *fp)
     printSymbolTable();
 }
 
-void instructionHandler(char *addressMode, int operand, int opcode, int instruction, Module module, int *globalInstCount, vector<Symbol> *useList, vector<Instruction> *instructions)
+void instructionHandler(char addressMode, int operand, int opcode, int instruction, Module module, int *globalInstCount, vector<Symbol> *useList, vector<Instruction> *instructions)
 {
     // Initialize the updated instruction and error message
     int newInstruction = instruction;
@@ -370,7 +362,7 @@ void instructionHandler(char *addressMode, int operand, int opcode, int instruct
     {
 
         // Handle the instruction based on the addressing mode
-        switch (addressMode[0])
+        switch (addressMode)
         {
         case 'M': // Replace with the base address of the module
                   // If the operand exceeds the module base table size, print an error message
@@ -503,7 +495,7 @@ void pass2(FILE *fp)
         {
             string intructionErrorMessage = ""; // The error message for the instruction
             // Read the addressing mode and instruction
-            char *addressMode = readMARIE(fp);
+            char addressMode = readMARIE(fp);
             int *instruction = readInteger(fp);
             // Extract the opcode and operand from the instruction
             int opcode = *instruction / 1000;
