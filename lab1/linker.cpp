@@ -18,7 +18,8 @@ public:
     int absoluteAddress; // The absolute address of the symbol
     int relativeAddress; // The relative address of the symbol
     int moduleNumber;    // The module number it is defined in
-    bool used;           // Whether the symbol has been used or redefined
+    bool redefined;      // Whether the symbol has been redefined
+    bool used;           // Whether the symbol has been used
     string errorMessage; // The error message for the symbol
 };
 
@@ -191,6 +192,7 @@ Symbol readSymbol(FILE *fp, Module module, bool isDef = true)
     symbol.name = strdup(token.value->c_str());
     symbol.moduleNumber = module.number;
     symbol.used = false;
+    symbol.redefined = false;
     symbol.errorMessage = "";
 
     // Read the relative address if it's a definition
@@ -289,7 +291,7 @@ void pass1(FILE *fp)
             // Read the symbol and add it to the symbol table
             Symbol symbol = readSymbol(fp, module, true);
             bool existingSymbolCheck = addSymbolToSymbolTable(symbol, module);
-            symbol.used = existingSymbolCheck;
+            symbol.redefined = existingSymbolCheck;
             defList.push_back(symbol);
         }
 
@@ -320,7 +322,7 @@ void pass1(FILE *fp)
         for (int i = 0; i < defList.size(); i++)
         {
             // Check if the total number of instructions exceeds the memory size and print a warning message
-            if (defList[i].relativeAddress > module.size && !defList[i].used)
+            if (defList[i].relativeAddress > module.size && !defList[i].redefined)
             {
                 // Print a warning message
                 cout << "Warning: Module " << module.number << ": " << defList[i].name << "=" << defList[i].relativeAddress << " valid=[0.." << module.size - 1 << "] assume zero relative" << endl;
@@ -332,7 +334,7 @@ void pass1(FILE *fp)
                 symbol->absoluteAddress = defList[i].absoluteAddress;
             }
             // Check if the symbol was defined multiple times
-            else if (defList[i].used)
+            else if (defList[i].redefined)
                 cout << "Warning: Module " << module.number << ": " << defList[i].name << " redefinition ignored" << endl;
         }
 
