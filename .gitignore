@@ -3,3 +3,4 @@ outdir/
 
 *.out
 linker
+scheduler
