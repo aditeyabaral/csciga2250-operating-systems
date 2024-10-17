@@ -64,6 +64,9 @@ public:
     virtual Process *getNextProcess() = 0;         // A function to get the next process from the ready queue
 };
 
+// Initialize the scheduler object.
+Scheduler *scheduler = nullptr;
+
 // A First Come First Serve (FCFS) Scheduler class
 class FCFS : public Scheduler
 {
@@ -162,7 +165,7 @@ void addEvent(Event *event)
 }
 
 // A function to simulate the execution of events
-void simulate(Scheduler *scheduler)
+void simulate()
 {
     Event *event;
     while ((event = getEvent()) != NULL)
@@ -206,9 +209,8 @@ void parseSchedulerSpecificationNumMaxprios(int *quantum, int *maxprios, char *s
 }
 
 // A function to initialise the scheduler based on the scheduler specification
-Scheduler *initScheduler(char *schedulerSpec)
+void initScheduler(char *schedulerSpec)
 {
-    Scheduler *scheduler = nullptr;
     int quantum = 10000, maxprios = 4; // Default values for quantum and maxprios
     if (schedulerSpec[0] == 'F')       // FCFS
     {
@@ -242,8 +244,6 @@ Scheduler *initScheduler(char *schedulerSpec)
         parseSchedulerSpecificationNumMaxprios(&quantum, &maxprios, schedulerSpec);
         // scheduler = PreemptivePriority(quantum, maxprios);
     }
-
-    return scheduler;
 }
 
 // Main function
@@ -252,9 +252,6 @@ int main(int argc, char *argv[])
     int opt;
     bool showHelp = false, verbose = false, traceEventExecution = false, showEventQueue = false, showPreemption = false;
     const char *optstring = "hvteps:";
-
-    // Initialize the scheduler object. TODOL: Make it a global variable
-    Scheduler *scheduler = nullptr;
 
     // Parse the command line arguments
     while ((opt = getopt(argc, argv, optstring)) != -1)
@@ -277,7 +274,7 @@ int main(int argc, char *argv[])
             showPreemption = true;
             break;
         case 's':
-            scheduler = initScheduler(optarg);
+            initScheduler(optarg);
             break;
         default:
             cout << "Usage: " << argv[0] << " [-h] [-v] [-t] [-e] [-p] [-s <scheduler>] inputFile randFile" << endl;
@@ -341,7 +338,7 @@ int main(int argc, char *argv[])
     readInputFile(inputFile, scheduler->maxprios);
 
     // Run the event simulation
-    simulate(scheduler);
+    simulate();
 
     return 0;
 }
