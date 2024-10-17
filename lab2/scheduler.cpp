@@ -7,6 +7,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <queue>
+#include <deque>
 
 using namespace std;
 
@@ -59,7 +60,7 @@ class Scheduler
 public:
     int quantum = 10000;                           // The quantum of the scheduler. Default value is 10K
     int maxprios = 4;                              // The maximum number of priorities. Default value is 4
-    queue<Process *> readyQueue;                   // The ready queue
+    deque<Process *> readyQueue;                   // The ready queue to store the processes
     virtual void addProcess(Process *process) = 0; // A function to add a process to the ready queue
     virtual Process *getNextProcess() = 0;         // A function to get the next process from the ready queue
 };
@@ -73,7 +74,7 @@ class FCFS : public Scheduler
 public:
     void addProcess(Process *process)
     {
-        readyQueue.push(process);
+        readyQueue.push_back(process);
     }
 
     Process *getNextProcess()
@@ -81,7 +82,26 @@ public:
         if (readyQueue.empty())
             return NULL;
         Process *process = readyQueue.front();
-        readyQueue.pop();
+        readyQueue.pop_front();
+        return process;
+    }
+};
+
+// A Last Come First Serve (LCFS) Scheduler class
+class LCFS : public Scheduler
+{
+public:
+    void addProcess(Process *process)
+    {
+        readyQueue.push_back(process);
+    }
+
+    Process *getNextProcess()
+    {
+        if (readyQueue.empty())
+            return NULL;
+        Process *process = readyQueue.back();
+        readyQueue.pop_back();
         return process;
     }
 };
@@ -135,11 +155,12 @@ void readInputFile(FILE *inputFile, int maxprios = 4)
         process->cpuBurst = atoi(strtok(NULL, " "));
         process->ioBurst = atoi(strtok(NULL, " "));
         process->staticPriority = randomNumberGenerator(maxprios);
-        process->stateTimeStamp = 0; // TODO: What is the time stamp?
+        process->dynamicPriority = process->staticPriority - 1;
+        process->stateTimeStamp = process->arrivalTime;
 
         // Create an event for the process and push it to the eventQueue
         Event *event = new Event();
-        event->timeStamp = 0; // TODO: What is the time stamp?
+        event->timeStamp = process->arrivalTime;
         event->process = process;
         event->oldState = CREATED;
         event->newState = READY;
@@ -164,33 +185,149 @@ void addEvent(Event *event)
     eventQueue.push(event);
 }
 
+int getNextEventTimeStamp()
+{
+    if (eventQueue.empty())
+        return -1;
+    return eventQueue.front()->timeStamp;
+}
+
+// A function to convert the state enum to a string
+string stateToString(State state)
+{
+    switch (state)
+    {
+    case CREATED:
+        return "CREATED";
+    case READY:
+        return "READY";
+    case RUNNING:
+        return "RUNNING";
+    case BLOCKED:
+        return "BLOCKED";
+    }
+    return "";
+}
+
+// A function to print the verbose output during state transitions
+void verbosePrint(int currentTime, int processNumber, int timeInPreviousState, string oldState, string newState, string message = "")
+{
+    cout << currentTime << " " << processNumber << " " << timeInPreviousState << ": "
+         << oldState << " -> " << newState << " "
+         << message << endl;
+}
+
 // A function to simulate the execution of events
-void simulate()
+void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool showPreemption)
 {
     Event *event;
     while ((event = getEvent()) != NULL)
     {
         Process *process = event->process;
-        int currentTime = event->timeStamp; // TODO: What is CURRENT_TIME?
+        int currentTime = event->timeStamp;
         int timeInPreviousState = currentTime - process->stateTimeStamp;
         Transition transition = event->transition;
+        State oldState = event->oldState, newState = event->newState;
+        string oldStateStr = stateToString(oldState), newStateStr = stateToString(newState);
         event = NULL;
+        bool callScheduler = false;
+        Process *currentRunningProcess = nullptr;
+
+        // Execute the event based on the transition
         switch (transition)
         {
         case TO_READY:
             // Must come from CREATED or BLOCKED
             // Add the process to the ready queue, no event is generated
             scheduler->addProcess(process);
+            callScheduler = true;
+            // Print the verbose output if the verbose flag is set
+            if (verbose)
+                verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr);
             break;
         case TO_PREEMPT:
             // Must come from RUNNING
             // Add the process to the ready queue, no event is generated
             scheduler->addProcess(process);
+            callScheduler = true;
             break;
         case TO_RUNNING:
+        {
             // Create event for preemption or blocking
             // Must come from READY
+            int cpuBurst = process->cpuBurst;
+            int currentCpuBurst = randomNumberGenerator(cpuBurst);
+            int quantum = scheduler->quantum;
+            int remainingExecutionTime = process->cpuTime;
+            if (remainingExecutionTime < currentCpuBurst)
+                currentCpuBurst = remainingExecutionTime;
+            // Print the verbose output if the verbose flag is set if (verbose)
+            {
+                string message = "cb=" + to_string(currentCpuBurst) + " rem=" + to_string(remainingExecutionTime) + " prio=" + to_string(process->dynamicPriority);
+                verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
+            }
+            int timeToNextEvent = currentTime + currentCpuBurst;
+            int remainingExecutionTimeAfterCurrentCpuBurst = remainingExecutionTime - currentCpuBurst;
+            process->cpuTime = remainingExecutionTimeAfterCurrentCpuBurst;
+            process->stateTimeStamp = currentTime;
+            process->dynamicPriority--;
+
+            // Create an event for the process to transition to BLOCKED
+            Event *event = new Event();
+            event->timeStamp = timeToNextEvent;
+            event->process = process;
+            event->oldState = RUNNING;
+            event->newState = BLOCKED;
+            event->transition = TO_BLOCKED;
+            addEvent(event);
             break;
+        }
+        case TO_BLOCKED:
+            // //create an event for when process becomes READY again
+            callScheduler = true;
+            int ioBurst = process->ioBurst;
+            int currentIoBurst = randomNumberGenerator(ioBurst);
+            int timeToNextEvent = currentTime + currentIoBurst;
+            process->stateTimeStamp = currentTime;
+            // Print the verbose output if the verbose flag is set
+            if (verbose)
+            {
+                string message = "ib=" + to_string(currentIoBurst) + " rem=" + to_string(process->cpuTime);
+                verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
+            }
+
+            // Create an event for the process to transition to READY
+            Event *event = new Event();
+            event->timeStamp = timeToNextEvent;
+            event->process = process;
+            event->oldState = BLOCKED;
+            event->newState = READY;
+            event->transition = TO_READY;
+            addEvent(event);
+            break;
+        }
+
+        // Call the scheduler to get the next process
+        if (callScheduler)
+        {
+            if (getNextEventTimeStamp() == currentTime)
+            {
+                continue;
+            }
+            callScheduler = false;
+            if (currentRunningProcess == nullptr)
+            {
+                currentRunningProcess = scheduler->getNextProcess();
+                if (currentRunningProcess == nullptr)
+                    continue;
+                Event *event = new Event();
+                event->timeStamp = currentTime;
+                event->process = currentRunningProcess;
+                event->oldState = READY;
+                event->newState = RUNNING;
+                event->transition = TO_RUNNING;
+                addEvent(event);
+            }
         }
     }
 }
@@ -205,7 +342,6 @@ void parseSchedulerSpecificationNumMaxprios(int *quantum, int *maxprios, char *s
     *quantum = atoi(num);
     if (maxpriosStr != NULL)
         *maxprios = atoi(maxpriosStr);
-    cout << "Quantum: " << *quantum << ", Maxprios: " << *maxprios << endl;
 }
 
 // A function to initialise the scheduler based on the scheduler specification
@@ -218,12 +354,11 @@ void initScheduler(char *schedulerSpec)
     }
     else if (schedulerSpec[0] == 'L') // LCFS
     {
-        // scheduler = LCFS();
-        ;
+        scheduler = new LCFS();
     }
     else if (schedulerSpec[0] == 'S') // SRTF
     {
-        // scheduler = SRTF();
+        // scheduler = new SRTF();
         ;
     }
     else if (schedulerSpec[0] == 'R') // Round Robin
@@ -338,7 +473,7 @@ int main(int argc, char *argv[])
     readInputFile(inputFile, scheduler->maxprios);
 
     // Run the event simulation
-    simulate();
+    simulate(verbose, traceEventExecution, showEventQueue, showPreemption);
 
     return 0;
 }
