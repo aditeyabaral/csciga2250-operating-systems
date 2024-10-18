@@ -227,38 +227,55 @@ string stateToString(State state)
 
 void displayEventQueue()
 {
-    cout << "Event Queue: ";
-    for (int i = 0; i < eventQueue.size(); i++)
-    {
-        cout << "t=" << eventQueue[i]->timeStamp << " "
-             << "pid=" << eventQueue[i]->process->processNumber << " "
-             << stateToString(eventQueue[i]->oldState) << "->"
-             << stateToString(eventQueue[i]->newState) << " | ";
-    }
-    cout << endl;
+    if (eventQueue.empty())
+        cout << "()";
+    else
+        for (int i = 0; i < eventQueue.size(); i++)
+        {
+            {
+                cout << "(t=" << eventQueue[i]->timeStamp << " "
+                     << "pid=" << eventQueue[i]->process->processNumber << " "
+                     << stateToString(eventQueue[i]->oldState) << "->"
+                     << stateToString(eventQueue[i]->newState) << ") | ";
+            }
+        }
 }
 
 // A function to add an event to the eventQueue in order of the timestamp
-void addEvent(Event *event)
+void addEvent(Event *event, bool showEventQueue = false)
 {
-    displayEventQueue();
-    if (eventQueue.empty())
+    if (showEventQueue)
     {
-        eventQueue.push_back(event);
+        cout << "AddEvent(t=" << event->timeStamp
+             << " pid=" << event->process->processNumber
+             << " trans=" << stateToString(event->oldState) << "->" << stateToString(event->newState) << "): ";
         displayEventQueue();
-        return;
+        cout << " => ";
     }
-    for (int i = 0; i < eventQueue.size(); i++)
+
+    if (eventQueue.empty())
+        eventQueue.push_back(event);
+    else
     {
-        if (eventQueue[i]->timeStamp > event->timeStamp)
+        bool added = false;
+        for (int i = 0; i < eventQueue.size(); i++)
         {
-            eventQueue.insert(eventQueue.begin() + i, event);
-            displayEventQueue();
-            return;
+            if (eventQueue[i]->timeStamp > event->timeStamp)
+            {
+                eventQueue.insert(eventQueue.begin() + i, event);
+                added = true;
+                break;
+            }
         }
+        if (!added)
+            eventQueue.push_back(event);
     }
-    displayEventQueue();
-    eventQueue.push_back(event);
+
+    if (showEventQueue)
+    {
+        displayEventQueue();
+        cout << endl;
+    }
 }
 
 // A function to get the timestamp of the next event in the eventQueue
@@ -277,7 +294,7 @@ void verbosePrint(int currentTime, int processNumber, int timeInPreviousState, s
         transitionStr = "DONE";
     else
         transitionStr = oldState + " -> " + newState;
-    cout << currentTime << " " << processNumber << " " << timeInPreviousState << ": "
+    cout << "t=" << currentTime << " pid=" << processNumber << " tps=" << timeInPreviousState << ": "
          << transitionStr << " " << message << endl;
 }
 
@@ -314,6 +331,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             // Store the (IO_START, IO_END) timestamps for later accounting
             if (currentRunningProcess != nullptr && currentRunningProcess->processNumber == process->processNumber)
                 currentRunningProcess = nullptr;
+            process->ioTime += timeInPreviousState;
             scheduler->ioTimeStamps.push_back({process->stateTimeStamp, currentTime});
             process->stateTimeStamp = currentTime;
             scheduler->addProcess(process);
@@ -344,7 +362,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             // Print the verbose output if the verbose flag is set
             if (verbose)
             {
-                string message = "cb=" + to_string(currentCpuBurst) + " rem=" + to_string(remainingExecutionTime) + " prio=" + to_string(process->dynamicPriority);
+                string message = "[cb=" + to_string(currentCpuBurst) + " rem=" + to_string(remainingExecutionTime) + " prio=" + to_string(process->dynamicPriority) + "]";
                 verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
             }
             if (remainingExecutionTime > 0)
@@ -364,7 +382,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 event->oldState = RUNNING;
                 event->newState = BLOCKED;
                 event->transition = TO_BLOCKED;
-                addEvent(event);
+                addEvent(event, showEventQueue);
             }
             break;
         }
@@ -383,7 +401,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 // Print the verbose output if the verbose flag is set
                 if (verbose)
                 {
-                    string message = "ib=" + to_string(currentIoBurst) + " rem=" + to_string(process->remainingCpuTime);
+                    string message = "[ib=" + to_string(currentIoBurst) + " rem=" + to_string(process->remainingCpuTime) + "]";
                     verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
                 }
 
@@ -394,7 +412,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 event->oldState = BLOCKED;
                 event->newState = READY;
                 event->transition = TO_READY;
-                addEvent(event);
+                addEvent(event, showEventQueue);
             }
             else // Process has no remaining CPU time, so it is done executing
             {
@@ -407,10 +425,6 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
         }
 
         // Call the scheduler to get the next process
-        if (currentRunningProcess != nullptr)
-            cout << "Current Running Process: " << currentRunningProcess->processNumber << endl;
-        else
-            cout << "Current Running Process: NULL" << endl;
         if (callScheduler)
         {
             if (getNextEventTimeStamp() == currentTime)
@@ -430,7 +444,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 event->oldState = READY;
                 event->newState = RUNNING;
                 event->transition = TO_RUNNING;
-                addEvent(event);
+                addEvent(event, showEventQueue);
             }
         }
     }
@@ -511,16 +525,13 @@ void displayProcessInfo()
     double avgTurnaroundTime = totalTurnaroundTime / (double)processes.size();
     double avgWaitTime = totalWaitTime / (double)processes.size();
 
-    // Print the summary statistics
     cout << "SUM: "
          << simulationFinishTime << " "
-         << fixed << setprecision(3) // TODO: Check precision
-         << cpuUtilization << " "
-         << ioUtilization << " "
-         << avgTurnaroundTime << " "
-         << avgWaitTime << " "
-         << throughput << " "
-         << endl;
+         << fixed << setprecision(2) << cpuUtilization << " "
+         << fixed << setprecision(2) << ioUtilization << " "
+         << fixed << setprecision(2) << avgTurnaroundTime << " "
+         << fixed << setprecision(2) << avgWaitTime << " "
+         << fixed << setprecision(3) << throughput << endl;
 }
 
 // A function to parse the scheduler specification and return the time quantum and the maximum number of priorities
