@@ -264,11 +264,6 @@ void verbosePrint(int currentTime, int processNumber, int timeInPreviousState, s
          << transitionStr << " " << message << endl;
 }
 
-// A function to update the scheduler I/O time
-void updateSchedulerIoTime(int stateTimeStamp, int currentTime)
-{
-}
-
 // A function to simulate the execution of events
 void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool showPreemption)
 {
@@ -453,7 +448,7 @@ void computeSchedulerTotalIoTime()
 void displayProcessInfo()
 {
     // Variables to store summary statistics
-    int simulationFinishTime = 0, totalCpuBusy = 0, totalIoBusy = 0, totalTurnaroundTime = 0, totalWaitTime = 0;
+    int simulationFinishTime = 0, totalTurnaroundTime = 0, totalWaitTime = 0;
     // Print the process information
     cout << scheduler->name << endl;
     for (int i = 0; i < processes.size(); i++)
@@ -475,15 +470,16 @@ void displayProcessInfo()
                                    ? process->finishTime
                                    : simulationFinishTime;
 
-        totalCpuBusy += process->cpuTime;
-        totalIoBusy += process->ioTime;
+        // TODO: Computer scheduler total CPU time in simulate function
+        scheduler->cpuTime += process->cpuTime;
         totalTurnaroundTime += process->turnaroundTime;
         totalWaitTime += process->cpuWaitTime;
     }
 
     // Calculate the summary statistics
+    // TODO: Compute processes.size() only once
     computeSchedulerTotalIoTime();
-    double cpuUtilization = 100.0 * (totalCpuBusy / (double)simulationFinishTime);
+    double cpuUtilization = 100.0 * (scheduler->cpuTime / (double)simulationFinishTime);
     double ioUtilization = 100.0 * (scheduler->ioTime / (double)simulationFinishTime);
     double throughput = 100.0 * (processes.size() / (double)simulationFinishTime);
     double avgTurnaroundTime = totalTurnaroundTime / (double)processes.size();
@@ -492,6 +488,7 @@ void displayProcessInfo()
     // Print the summary statistics
     cout << "SUM: "
          << simulationFinishTime << " "
+         << fixed << setprecision(3) // TODO: Check precision
          << cpuUtilization << " "
          << ioUtilization << " "
          << avgTurnaroundTime << " "
