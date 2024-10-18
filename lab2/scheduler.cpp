@@ -130,6 +130,64 @@ public:
     }
 };
 
+// A Shortest Remaining Time First (SRTF) Scheduler class
+class SRTF : public Scheduler
+{
+public:
+    // Constructor to initialize the name of the scheduler
+    SRTF()
+    {
+        name = "SRTF";
+    }
+    // Add a process to the ready queue
+    void addProcess(Process *process)
+    {
+        readyQueue.push_back(process);
+    }
+
+    // Get the next process from the ready queue. The process with the shortest remaining CPU time is returned first.
+    Process *getNextProcess()
+    {
+        if (readyQueue.empty())
+            return NULL;
+        Process *shortestProcess = readyQueue.front();
+        for (int i = 1; i < readyQueue.size(); i++)
+        {
+            if (readyQueue[i]->remainingCpuTime < shortestProcess->remainingCpuTime)
+                shortestProcess = readyQueue[i];
+        }
+        readyQueue.erase(remove(readyQueue.begin(), readyQueue.end(), shortestProcess), readyQueue.end());
+        return shortestProcess;
+    }
+};
+
+// A Round Robin (RR) Scheduler class
+class RoundRobin : public Scheduler
+{
+public:
+    // Constructor to initialize the name of the scheduler and the quantum
+    RoundRobin(int quantum)
+    {
+        name = "RoundRobin";
+        this->quantum = quantum;
+    }
+    // Add a process to the ready queue
+    void addProcess(Process *process)
+    {
+        readyQueue.push_back(process);
+    }
+
+    // Get the next process from the ready queue. The process is returned in a round-robin fashion based on the quantum.
+    Process *getNextProcess()
+    {
+        if (readyQueue.empty())
+            return NULL;
+        Process *process = readyQueue.front();
+        readyQueue.pop_front();
+        return process;
+    }
+};
+
 // Variables to store random values and the random index offset
 int *randomValues;
 int MAX_RANDOM_VALUES_LENGTH;
@@ -561,35 +619,28 @@ void initScheduler(char *schedulerSpec)
 {
     int quantum = 10000, maxprios = 4; // Default values for quantum and maxprios
     if (schedulerSpec[0] == 'F')       // FCFS
-    {
         scheduler = new FCFS();
-    }
     else if (schedulerSpec[0] == 'L') // LCFS
-    {
         scheduler = new LCFS();
-    }
     else if (schedulerSpec[0] == 'S') // SRTF
-    {
-        // scheduler = new SRTF();
-        ;
-    }
+        scheduler = new SRTF();
     else if (schedulerSpec[0] == 'R') // Round Robin
     {
         // Extract the quantum
         parseSchedulerSpecificationNumMaxprios(&quantum, &maxprios, schedulerSpec);
-        // scheduler = RoundRobin(quantum);
+        scheduler = new RoundRobin(quantum);
     }
     else if (schedulerSpec[0] == 'P') // Priority
     {
         // Extract the quantum and maxprios
         parseSchedulerSpecificationNumMaxprios(&quantum, &maxprios, schedulerSpec);
-        // scheduler = Priority(quantum, maxprios);
+        // scheduler = new Priority(quantum, maxprios);
     }
     else if (schedulerSpec[0] == 'E') // Preemptive Priority
     {
         // Extract the quantum and maxprios
         parseSchedulerSpecificationNumMaxprios(&quantum, &maxprios, schedulerSpec);
-        // scheduler = PreemptivePriority(quantum, maxprios);
+        // scheduler = new PreemptivePriority(quantum, maxprios);
     }
 }
 
