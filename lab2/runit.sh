@@ -7,7 +7,7 @@
 
 INDIR=${INDIR:-.}
 INS=${INS:-"`seq 0 7`"}
-SCHEDS=${SCHEDS:-"  F    L    S   R2    R5    P2   P5:3  E2:5 E4"}
+SCHEDS=${SCHEDS:-"  F    L    "} #S   R2    R5    P2   P5:3  E2:5 E4"}
 RFILE=${RFILE:-${INDIR}/rfile}
 
 #SCHEDS="   F"     # example if you only want to run the F scheduler during development        

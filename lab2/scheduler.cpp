@@ -166,48 +166,6 @@ vector<Event *> eventQueue;
 // A vector to store the processes
 vector<Process *> processes;
 
-// A function to read the input file and populate the eventQueue
-void readInputFile(FILE *inputFile, int maxprios = 4)
-{
-    int processNumber = 0;
-    // Read the input file and populate the eventQueue
-    static char line[1024];
-    while (fgets(line, 1024, inputFile) != NULL)
-    {
-        // Create a process and populate the process information
-        Process *process = new Process();
-        process->processNumber = processNumber++;
-        process->arrivalTime = atoi(strtok(line, " "));
-        process->cpuTime = atoi(strtok(NULL, " "));
-        process->remainingCpuTime = process->cpuTime;
-        process->cpuBurst = atoi(strtok(NULL, " "));
-        process->ioBurst = atoi(strtok(NULL, " "));
-        process->staticPriority = randomNumberGenerator(maxprios);
-        process->dynamicPriority = process->staticPriority - 1;
-        process->stateTimeStamp = process->arrivalTime;
-        processes.push_back(process);
-
-        // Create an event for the process and push it to the eventQueue
-        Event *event = new Event();
-        event->timeStamp = process->arrivalTime;
-        event->process = process;
-        event->oldState = CREATED;
-        event->newState = READY;
-        event->transition = TO_READY;
-        eventQueue.push_back(event);
-    }
-}
-
-// A function to return the head of the eventQueue
-Event *getEvent()
-{
-    if (eventQueue.empty())
-        return NULL;
-    Event *event = eventQueue.front();
-    eventQueue.erase(eventQueue.begin());
-    return event;
-}
-
 // A function to map the state enum to a string representation
 string stateToString(State state)
 {
@@ -225,6 +183,7 @@ string stateToString(State state)
     return "";
 }
 
+// A function to display the event queue
 void displayEventQueue()
 {
     if (eventQueue.empty())
@@ -276,6 +235,49 @@ void addEvent(Event *event, bool showEventQueue = false)
         displayEventQueue();
         cout << endl;
     }
+}
+
+// A function to read the input file and populate the eventQueue
+void readInputFile(FILE *inputFile, int maxprios = 4, bool showEventQueue = false)
+{
+    int processNumber = 0;
+    // Read the input file and populate the eventQueue
+    static char line[1024];
+    while (fgets(line, 1024, inputFile) != NULL)
+    {
+        // Create a process and populate the process information
+        Process *process = new Process();
+        process->processNumber = processNumber++;
+        process->arrivalTime = atoi(strtok(line, " "));
+        process->cpuTime = atoi(strtok(NULL, " "));
+        process->remainingCpuTime = process->cpuTime;
+        process->cpuBurst = atoi(strtok(NULL, " "));
+        process->ioBurst = atoi(strtok(NULL, " "));
+        process->staticPriority = randomNumberGenerator(maxprios);
+        process->dynamicPriority = process->staticPriority - 1;
+        process->stateTimeStamp = process->arrivalTime;
+        processes.push_back(process);
+
+        // Create an event for the process and push it to the eventQueue
+        Event *event = new Event();
+        event->timeStamp = process->arrivalTime;
+        event->process = process;
+        event->oldState = CREATED;
+        event->newState = READY;
+        event->transition = TO_READY;
+        // eventQueue.push_back(event);
+        addEvent(event, showEventQueue);
+    }
+}
+
+// A function to return the head of the eventQueue
+Event *getEvent()
+{
+    if (eventQueue.empty())
+        return NULL;
+    Event *event = eventQueue.front();
+    eventQueue.erase(eventQueue.begin());
+    return event;
 }
 
 // A function to get the timestamp of the next event in the eventQueue
@@ -388,11 +390,11 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
         }
         case TO_BLOCKED:
             currentRunningProcess = nullptr;
+            callScheduler = true;
             // create an event for when process becomes READY again
             if (process->remainingCpuTime > 0) // Execute only if the process has remaining CPU time
             {
                 // Calculate the I/O burst and the time to the next event
-                callScheduler = true;
                 int ioBurst = process->ioBurst;
                 int currentIoBurst = randomNumberGenerator(ioBurst);
                 int timeToNextEvent = currentTime + currentIoBurst;
@@ -494,16 +496,21 @@ void displayProcessInfo()
     for (int i = 0; i < processes.size(); i++)
     {
         Process *process = processes[i];
-        cout << setw(4) << setfill('0') << process->processNumber << ":";
-        cout << setw(4) << setfill(' ') << process->arrivalTime << " ";
-        cout << setw(4) << process->cpuTime << " ";
-        cout << setw(4) << process->cpuBurst << " ";
-        cout << setw(4) << process->ioBurst << " ";
-        cout << setw(4) << process->staticPriority << " |";
-        cout << setw(4) << process->finishTime << " ";
-        cout << setw(4) << process->turnaroundTime << " ";
-        cout << setw(4) << process->ioTime << " ";
-        cout << setw(4) << process->cpuWaitTime << endl;
+        printf("%04d: %4d %4d %4d %4d %1d | %5d %5d %5d %5d\n",
+               process->processNumber, process->arrivalTime, process->cpuTime, process->cpuBurst, process->ioBurst, process->staticPriority,
+               process->finishTime, process->turnaroundTime, process->ioTime, process->cpuWaitTime);
+
+        // TODO: Rewrite the above printf statement using cout
+        // cout << setw(4) << setfill('0') << process->processNumber << ": ";
+        // cout << setw(4) << setfill(' ') << process->arrivalTime << " ";
+        // cout << setw(4) << process->cpuTime << " ";
+        // cout << setw(4) << process->cpuBurst << " ";
+        // cout << setw(4) << process->ioBurst << " ";
+        // cout << setw(4) << process->staticPriority << " |";
+        // cout << setw(4) << process->finishTime << " ";
+        // cout << setw(4) << process->turnaroundTime << " ";
+        // cout << setw(4) << process->ioTime << " ";
+        // cout << setw(4) << process->cpuWaitTime << endl;
 
         // Update the process statistics from the current process
         simulationFinishTime = (process->finishTime > simulationFinishTime)
@@ -525,13 +532,16 @@ void displayProcessInfo()
     double avgTurnaroundTime = totalTurnaroundTime / (double)processes.size();
     double avgWaitTime = totalWaitTime / (double)processes.size();
 
-    cout << "SUM: "
-         << simulationFinishTime << " "
-         << fixed << setprecision(2) << cpuUtilization << " "
-         << fixed << setprecision(2) << ioUtilization << " "
-         << fixed << setprecision(2) << avgTurnaroundTime << " "
-         << fixed << setprecision(2) << avgWaitTime << " "
-         << fixed << setprecision(3) << throughput << endl;
+    printf("SUM: %d %.2lf %.2lf %.2lf %.2lf %.3lf\n", simulationFinishTime, cpuUtilization, ioUtilization, avgTurnaroundTime, avgWaitTime, throughput);
+
+    // TODO: Rewrite the above printf statement using cout
+    // cout << "SUM: "
+    //      << simulationFinishTime << " "
+    //      << fixed << setprecision(2) << cpuUtilization << " "
+    //      << fixed << setprecision(2) << ioUtilization << " "
+    //      << fixed << setprecision(2) << avgTurnaroundTime << " "
+    //      << fixed << setprecision(2) << avgWaitTime << " "
+    //      << fixed << setprecision(3) << throughput << endl;
 }
 
 // A function to parse the scheduler specification and return the time quantum and the maximum number of priorities
@@ -672,7 +682,7 @@ int main(int argc, char *argv[])
     readRandomFile(randomFile);
 
     // Read the input file and populate the eventQueue
-    readInputFile(inputFile, scheduler->maxprios);
+    readInputFile(inputFile, scheduler->maxprios, showEventQueue);
 
     // Run the event simulation
     simulate(verbose, traceEventExecution, showEventQueue, showPreemption);
