@@ -34,3 +34,9 @@
 203 0 65: BLOCKED -> READY 
 203 0 0: READY -> RUNNING cb=6 rem=6 prio=1
 209 0 6: DONE 
+Process 0:
+arrival=1 cpu=0 io=188 turnaround=208 finish=209
+Process 1:
+arrival=1 cpu=0 io=125 turnaround=147 finish=148
+Process 2:
+arrival=1 cpu=0 io=38 turnaround=67 finish=68

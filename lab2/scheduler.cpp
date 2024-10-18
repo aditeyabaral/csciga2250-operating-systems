@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <queue>
 #include <deque>
+#include <algorithm>
 
 using namespace std;
 
@@ -15,14 +16,19 @@ using namespace std;
 class Process
 {
 public:
-    int processNumber;   // The process number
-    int arrivalTime;     // The arrival time of the process
-    int cpuTime;         // The CPU time of the process
-    int cpuBurst;        // The defined CPU burst of the process
-    int ioBurst;         // The defined I/O burst of the process
-    int staticPriority;  // The static priority of the process
-    int dynamicPriority; // The dynamic priority of the process
-    int stateTimeStamp;  // The time stamp when the process changed state
+    int processNumber;    // The process number
+    int arrivalTime;      // The arrival time of the process
+    int cpuTime;          // The CPU time of the process
+    int remainingCpuTime; // The remaining CPU time of the process
+    int cpuBurst;         // The defined CPU burst of the process
+    int ioBurst;          // The defined I/O burst of the process
+    int staticPriority;   // The static priority of the process
+    int dynamicPriority;  // The dynamic priority of the process
+    int stateTimeStamp;   // The time stamp when the process changed state
+    int finishTime;       // The finish time of the process
+    int turnaroundTime;   // The turnaround time of the process
+    int ioTime = 0;       // The time spent in I/O
+    int cpuWaitTime = 0;  // The time spent waiting for the CPU in the ready state
 };
 
 // A state enum to store the state of the process
@@ -58,8 +64,12 @@ public:
 class Scheduler
 {
 public:
+    string name;                                   // The name of the scheduler
     int quantum = 10000;                           // The quantum of the scheduler. Default value is 10K
     int maxprios = 4;                              // The maximum number of priorities. Default value is 4
+    int ioTime = 0;                                // The time spent in I/O
+    vector<vector<int>> ioTimeStamps;              // The time stamps for I/O
+    int cpuTime = 0;                               // The time spent by CPU
     deque<Process *> readyQueue;                   // The ready queue to store the processes
     virtual void addProcess(Process *process) = 0; // A function to add a process to the ready queue
     virtual Process *getNextProcess() = 0;         // A function to get the next process from the ready queue
@@ -72,6 +82,11 @@ Scheduler *scheduler = nullptr;
 class FCFS : public Scheduler
 {
 public:
+    // Constructor to initialize the name of the scheduler
+    FCFS()
+    {
+        name = "FCFS";
+    }
     // Add a process to the ready queue
     void addProcess(Process *process)
     {
@@ -93,6 +108,11 @@ public:
 class LCFS : public Scheduler
 {
 public:
+    // Constructor to initialize the name of the scheduler
+    LCFS()
+    {
+        name = "LCFS";
+    }
     // Add a process to the ready queue
     void addProcess(Process *process)
     {
@@ -143,6 +163,9 @@ void readRandomFile(FILE *randomFile)
 // A queue to store the events, implemented as a vector for inserting events in order of the timestamp
 vector<Event *> eventQueue;
 
+// A vector to store the processes
+vector<Process *> processes;
+
 // A function to read the input file and populate the eventQueue
 void readInputFile(FILE *inputFile, int maxprios = 4)
 {
@@ -156,11 +179,13 @@ void readInputFile(FILE *inputFile, int maxprios = 4)
         process->processNumber = processNumber++;
         process->arrivalTime = atoi(strtok(line, " "));
         process->cpuTime = atoi(strtok(NULL, " "));
+        process->remainingCpuTime = process->cpuTime;
         process->cpuBurst = atoi(strtok(NULL, " "));
         process->ioBurst = atoi(strtok(NULL, " "));
         process->staticPriority = randomNumberGenerator(maxprios);
         process->dynamicPriority = process->staticPriority - 1;
         process->stateTimeStamp = process->arrivalTime;
+        processes.push_back(process);
 
         // Create an event for the process and push it to the eventQueue
         Event *event = new Event();
@@ -239,6 +264,11 @@ void verbosePrint(int currentTime, int processNumber, int timeInPreviousState, s
          << transitionStr << " " << message << endl;
 }
 
+// A function to update the scheduler I/O time
+void updateSchedulerIoTime(int stateTimeStamp, int currentTime)
+{
+}
+
 // A function to simulate the execution of events
 void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool showPreemption)
 {
@@ -268,6 +298,8 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
         case TO_READY:
             // Must come from CREATED or BLOCKED
             // Add the process to the ready queue, no event is generated
+            // Store the (IO_START, IO_END) timestamps for later accounting
+            scheduler->ioTimeStamps.push_back({process->stateTimeStamp, currentTime});
             process->stateTimeStamp = currentTime;
             scheduler->addProcess(process);
             callScheduler = true;
@@ -289,10 +321,12 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             int cpuBurst = process->cpuBurst;
             int currentCpuBurst = randomNumberGenerator(cpuBurst);
             int quantum = scheduler->quantum;
-            int remainingExecutionTime = process->cpuTime;
+            int remainingExecutionTime = process->remainingCpuTime;
+            process->cpuWaitTime += timeInPreviousState;
             if (remainingExecutionTime < currentCpuBurst)
                 currentCpuBurst = remainingExecutionTime;
-            // Print the verbose output if the verbose flag is set if (verbose)
+            // Print the verbose output if the verbose flag is set
+            if (verbose)
             {
                 string message = "cb=" + to_string(currentCpuBurst) + " rem=" + to_string(remainingExecutionTime) + " prio=" + to_string(process->dynamicPriority);
                 verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
@@ -301,7 +335,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             {
                 int timeToNextEvent = currentTime + currentCpuBurst;
                 int remainingExecutionTimeAfterCurrentCpuBurst = remainingExecutionTime - currentCpuBurst;
-                process->cpuTime = remainingExecutionTimeAfterCurrentCpuBurst;
+                process->remainingCpuTime = remainingExecutionTimeAfterCurrentCpuBurst;
                 process->stateTimeStamp = currentTime;
                 process->dynamicPriority--;
                 if (process->dynamicPriority <= 0)
@@ -320,7 +354,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
         }
         case TO_BLOCKED:
             // //create an event for when process becomes READY again
-            if (process->cpuTime > 0) // Execute only if the process has remaining CPU time
+            if (process->remainingCpuTime > 0) // Execute only if the process has remaining CPU time
             {
                 // Calculate the I/O burst and the time to the next event
                 callScheduler = true;
@@ -332,7 +366,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 // Print the verbose output if the verbose flag is set
                 if (verbose)
                 {
-                    string message = "ib=" + to_string(currentIoBurst) + " rem=" + to_string(process->cpuTime);
+                    string message = "ib=" + to_string(currentIoBurst) + " rem=" + to_string(process->remainingCpuTime);
                     verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
                 }
 
@@ -347,6 +381,8 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             }
             else // Process has no remaining CPU time, so it is done executing
             {
+                process->finishTime = currentTime;
+                process->turnaroundTime = currentTime - process->arrivalTime;
                 if (verbose)
                     verbosePrint(currentTime, process->processNumber, timeInPreviousState, "", "");
             }
@@ -377,6 +413,91 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             }
         }
     }
+}
+
+// A function to compute the total I/O time by merging the overlapping I/O intervals
+void computeSchedulerTotalIoTime()
+{
+    if (scheduler->ioTimeStamps.empty())
+        return;
+
+    // Sort the intervals based on the start time
+    sort(scheduler->ioTimeStamps.begin(), scheduler->ioTimeStamps.end());
+
+    // Merge overlapping intervals
+    int start = scheduler->ioTimeStamps[0][0];
+    int end = scheduler->ioTimeStamps[0][1];
+
+    // Iterate over the intervals
+    for (int i = 1; i < scheduler->ioTimeStamps.size(); ++i)
+    {
+        // Check for overlap
+        if (scheduler->ioTimeStamps[i][0] <= end)
+        {
+            // Overlapping intervals, update the end time
+            end = max(end, scheduler->ioTimeStamps[i][1]);
+        }
+        else
+        {
+            // No overlap, add the duration and reset start and end
+            scheduler->ioTime += end - start;
+            start = scheduler->ioTimeStamps[i][0];
+            end = scheduler->ioTimeStamps[i][1];
+        }
+    }
+    // Add the last interval
+    scheduler->ioTime += end - start;
+}
+
+// A function to display the process information
+void displayProcessInfo()
+{
+    // Variables to store summary statistics
+    int simulationFinishTime = 0, totalCpuBusy = 0, totalIoBusy = 0, totalTurnaroundTime = 0, totalWaitTime = 0;
+    // Print the process information
+    cout << scheduler->name << endl;
+    for (int i = 0; i < processes.size(); i++)
+    {
+        Process *process = processes[i];
+        cout << setw(4) << setfill('0') << process->processNumber << ":";
+        cout << setw(4) << setfill(' ') << process->arrivalTime << " ";
+        cout << setw(4) << process->cpuTime << " ";
+        cout << setw(4) << process->cpuBurst << " ";
+        cout << setw(4) << process->ioBurst << " ";
+        cout << setw(4) << process->staticPriority << " |";
+        cout << setw(4) << process->finishTime << " ";
+        cout << setw(4) << process->turnaroundTime << " ";
+        cout << setw(4) << process->ioTime << " ";
+        cout << setw(4) << process->cpuWaitTime << endl;
+
+        // Update the process statistics from the current process
+        simulationFinishTime = (process->finishTime > simulationFinishTime)
+                                   ? process->finishTime
+                                   : simulationFinishTime;
+
+        totalCpuBusy += process->cpuTime;
+        totalIoBusy += process->ioTime;
+        totalTurnaroundTime += process->turnaroundTime;
+        totalWaitTime += process->cpuWaitTime;
+    }
+
+    // Calculate the summary statistics
+    computeSchedulerTotalIoTime();
+    double cpuUtilization = 100.0 * (totalCpuBusy / (double)simulationFinishTime);
+    double ioUtilization = 100.0 * (scheduler->ioTime / (double)simulationFinishTime);
+    double throughput = 100.0 * (processes.size() / (double)simulationFinishTime);
+    double avgTurnaroundTime = totalTurnaroundTime / (double)processes.size();
+    double avgWaitTime = totalWaitTime / (double)processes.size();
+
+    // Print the summary statistics
+    cout << "SUM: "
+         << simulationFinishTime << " "
+         << cpuUtilization << " "
+         << ioUtilization << " "
+         << avgTurnaroundTime << " "
+         << avgWaitTime << " "
+         << throughput << " "
+         << endl;
 }
 
 // A function to parse the scheduler specification and return the time quantum and the maximum number of priorities
@@ -521,6 +642,13 @@ int main(int argc, char *argv[])
 
     // Run the event simulation
     simulate(verbose, traceEventExecution, showEventQueue, showPreemption);
+
+    // Close the input and random files
+    fclose(inputFile);
+    fclose(randomFile);
+
+    // Print the process statistics
+    displayProcessInfo();
 
     return 0;
 }
