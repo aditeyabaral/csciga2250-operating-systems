@@ -1,42 +1,143 @@
 1 0 0: CREATED -> READY 
+Current Running Process: NULL
 1 1 0: CREATED -> READY 
+Current Running Process: NULL
 1 2 0: CREATED -> READY 
+Current Running Process: NULL
+Event Queue: 
+Event Queue: t=1 pid=0 READY->RUNNING | 
 1 0 0: READY -> RUNNING cb=2 rem=20 prio=1
+Event Queue: 
+Event Queue: t=3 pid=0 RUNNING->BLOCKED | 
+Current Running Process: 0
 3 0 2: RUNNING -> BLOCKED ib=40 rem=18
+Event Queue: 
+Event Queue: t=43 pid=0 BLOCKED->READY | 
+Current Running Process: NULL
+Event Queue: t=43 pid=0 BLOCKED->READY | 
+Event Queue: t=3 pid=1 READY->RUNNING | t=43 pid=0 BLOCKED->READY | 
 3 1 2: READY -> RUNNING cb=7 rem=20 prio=3
+Event Queue: t=43 pid=0 BLOCKED->READY | 
+Event Queue: t=10 pid=1 RUNNING->BLOCKED | t=43 pid=0 BLOCKED->READY | 
+Current Running Process: 1
 10 1 7: RUNNING -> BLOCKED ib=67 rem=13
+Event Queue: t=43 pid=0 BLOCKED->READY | 
+Event Queue: t=43 pid=0 BLOCKED->READY | 
+Current Running Process: NULL
+Event Queue: t=43 pid=0 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Event Queue: t=10 pid=2 READY->RUNNING | t=43 pid=0 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
 10 2 9: READY -> RUNNING cb=9 rem=20 prio=1
+Event Queue: t=43 pid=0 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Event Queue: t=19 pid=2 RUNNING->BLOCKED | t=43 pid=0 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Current Running Process: 2
 19 2 9: RUNNING -> BLOCKED ib=27 rem=11
+Event Queue: t=43 pid=0 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Event Queue: t=43 pid=0 BLOCKED->READY | t=46 pid=2 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Current Running Process: NULL
 43 0 40: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: t=46 pid=2 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Event Queue: t=43 pid=0 READY->RUNNING | t=46 pid=2 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
 43 0 0: READY -> RUNNING cb=1 rem=18 prio=1
+Event Queue: t=46 pid=2 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Event Queue: t=44 pid=0 RUNNING->BLOCKED | t=46 pid=2 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Current Running Process: 0
 44 0 1: RUNNING -> BLOCKED ib=49 rem=17
+Event Queue: t=46 pid=2 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Event Queue: t=46 pid=2 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | 
+Current Running Process: NULL
 46 2 27: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
+Event Queue: t=46 pid=2 READY->RUNNING | t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
 46 2 0: READY -> RUNNING cb=9 rem=11 prio=1
+Event Queue: t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
+Event Queue: t=55 pid=2 RUNNING->BLOCKED | t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
+Current Running Process: 2
 55 2 9: RUNNING -> BLOCKED ib=11 rem=2
+Event Queue: t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
+Event Queue: t=66 pid=2 BLOCKED->READY | t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
+Current Running Process: NULL
 66 2 11: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
+Event Queue: t=66 pid=2 READY->RUNNING | t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
 66 2 0: READY -> RUNNING cb=2 rem=2 prio=1
+Event Queue: t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
+Event Queue: t=68 pid=2 RUNNING->BLOCKED | t=77 pid=1 BLOCKED->READY | t=93 pid=0 BLOCKED->READY | 
+Current Running Process: 2
 68 2 2: DONE 
+Current Running Process: NULL
 77 1 67: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: t=93 pid=0 BLOCKED->READY | 
+Event Queue: t=77 pid=1 READY->RUNNING | t=93 pid=0 BLOCKED->READY | 
 77 1 0: READY -> RUNNING cb=6 rem=13 prio=2
+Event Queue: t=93 pid=0 BLOCKED->READY | 
+Event Queue: t=83 pid=1 RUNNING->BLOCKED | t=93 pid=0 BLOCKED->READY | 
+Current Running Process: 1
 83 1 6: RUNNING -> BLOCKED ib=22 rem=7
+Event Queue: t=93 pid=0 BLOCKED->READY | 
+Event Queue: t=93 pid=0 BLOCKED->READY | 
+Current Running Process: NULL
 93 0 49: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: t=105 pid=1 BLOCKED->READY | 
+Event Queue: t=93 pid=0 READY->RUNNING | t=105 pid=1 BLOCKED->READY | 
 93 0 0: READY -> RUNNING cb=2 rem=17 prio=1
+Event Queue: t=105 pid=1 BLOCKED->READY | 
+Event Queue: t=95 pid=0 RUNNING->BLOCKED | t=105 pid=1 BLOCKED->READY | 
+Current Running Process: 0
 95 0 2: RUNNING -> BLOCKED ib=34 rem=15
+Event Queue: t=105 pid=1 BLOCKED->READY | 
+Event Queue: t=105 pid=1 BLOCKED->READY | 
+Current Running Process: NULL
 105 1 22: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: t=129 pid=0 BLOCKED->READY | 
+Event Queue: t=105 pid=1 READY->RUNNING | t=129 pid=0 BLOCKED->READY | 
 105 1 0: READY -> RUNNING cb=2 rem=7 prio=1
+Event Queue: t=129 pid=0 BLOCKED->READY | 
+Event Queue: t=107 pid=1 RUNNING->BLOCKED | t=129 pid=0 BLOCKED->READY | 
+Current Running Process: 1
 107 1 2: RUNNING -> BLOCKED ib=36 rem=5
+Event Queue: t=129 pid=0 BLOCKED->READY | 
+Event Queue: t=129 pid=0 BLOCKED->READY | 
+Current Running Process: NULL
 129 0 34: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: t=143 pid=1 BLOCKED->READY | 
+Event Queue: t=129 pid=0 READY->RUNNING | t=143 pid=1 BLOCKED->READY | 
 129 0 0: READY -> RUNNING cb=9 rem=15 prio=1
+Event Queue: t=143 pid=1 BLOCKED->READY | 
+Event Queue: t=138 pid=0 RUNNING->BLOCKED | t=143 pid=1 BLOCKED->READY | 
+Current Running Process: 0
 138 0 9: RUNNING -> BLOCKED ib=65 rem=6
+Event Queue: t=143 pid=1 BLOCKED->READY | 
+Event Queue: t=143 pid=1 BLOCKED->READY | 
+Current Running Process: NULL
 143 1 36: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: t=203 pid=0 BLOCKED->READY | 
+Event Queue: t=143 pid=1 READY->RUNNING | t=203 pid=0 BLOCKED->READY | 
 143 1 0: READY -> RUNNING cb=5 rem=5 prio=3
+Event Queue: t=203 pid=0 BLOCKED->READY | 
+Event Queue: t=148 pid=1 RUNNING->BLOCKED | t=203 pid=0 BLOCKED->READY | 
+Current Running Process: 1
 148 1 5: DONE 
+Current Running Process: NULL
 203 0 65: BLOCKED -> READY 
+Current Running Process: NULL
+Event Queue: 
+Event Queue: t=203 pid=0 READY->RUNNING | 
 203 0 0: READY -> RUNNING cb=6 rem=6 prio=1
+Event Queue: 
+Event Queue: t=209 pid=0 RUNNING->BLOCKED | 
+Current Running Process: 0
 209 0 6: DONE 
-Process 0:
-arrival=1 cpu=0 io=188 turnaround=208 finish=209
-Process 1:
-arrival=1 cpu=0 io=125 turnaround=147 finish=148
-Process 2:
-arrival=1 cpu=0 io=38 turnaround=67 finish=68
+Current Running Process: NULL
+FCFS
+0000:   1   20   10   80    2 | 209  208    0    0
+0001:   1   20   10   70    4 | 148  147    0    2
+0002:   1   20   10   60    2 |  68   67    0    9
+SUM: 209 28.708 95.694 140.667 3.667 1.435 
