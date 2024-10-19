@@ -21,6 +21,7 @@ public:
     int cpuTime;          // The CPU time of the process
     int remainingCpuTime; // The remaining CPU time of the process
     int cpuBurst;         // The defined CPU burst of the process
+    int currentCpuBurst;  // The current CPU burst of the process
     int ioBurst;          // The defined I/O burst of the process
     int staticPriority;   // The static priority of the process
     int dynamicPriority;  // The dynamic priority of the process
@@ -168,7 +169,7 @@ public:
     // Constructor to initialize the name of the scheduler and the quantum
     RoundRobin(int quantum)
     {
-        name = "RoundRobin";
+        name = "RR " + to_string(quantum);
         this->quantum = quantum;
     }
     // Add a process to the ready queue
@@ -270,11 +271,13 @@ void addEvent(Event *event, bool showEventQueue = false)
         cout << " => ";
     }
 
+    // If the eventQueue is empty, add the event to the eventQueue
     if (eventQueue.empty())
         eventQueue.push_back(event);
     else
     {
         bool added = false;
+        // Find the correct position to insert the event based on the timestamp
         for (int i = 0; i < eventQueue.size(); i++)
         {
             if (eventQueue[i]->timeStamp > event->timeStamp)
@@ -284,6 +287,7 @@ void addEvent(Event *event, bool showEventQueue = false)
                 break;
             }
         }
+        // Add the event to the end of the eventQueue if the timestamp is greater than all the events in the eventQueue
         if (!added)
             eventQueue.push_back(event);
     }
@@ -310,6 +314,7 @@ void readInputFile(FILE *inputFile, int maxprios = 4, bool showEventQueue = fals
         process->cpuTime = atoi(strtok(NULL, " "));
         process->remainingCpuTime = process->cpuTime;
         process->cpuBurst = atoi(strtok(NULL, " "));
+        process->currentCpuBurst = 0;
         process->ioBurst = atoi(strtok(NULL, " "));
         process->staticPriority = randomNumberGenerator(maxprios);
         process->dynamicPriority = process->staticPriority - 1;
@@ -323,7 +328,6 @@ void readInputFile(FILE *inputFile, int maxprios = 4, bool showEventQueue = fals
         event->oldState = CREATED;
         event->newState = READY;
         event->transition = TO_READY;
-        // eventQueue.push_back(event);
         addEvent(event, showEventQueue);
     }
 }
@@ -385,67 +389,114 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
         // Execute the event based on the transition
         switch (transition)
         {
-        case TO_READY:
-            // Must come from CREATED, RUNNING or BLOCKED
-            // Add the process to the ready queue, no event is generated
-            // Store the (IO_START, IO_END) timestamps for later accounting
+        case TO_READY: // Must come from CREATED, RUNNING or BLOCKED
+            // If there is a running process and it is the same as the process from the current event,
+            // then set the currentRunningProcess to NULL as the process is transitioning to the ready state
             if (currentRunningProcess != nullptr && currentRunningProcess->processNumber == process->processNumber)
                 currentRunningProcess = nullptr;
+
+            // Add the I/O time to the process and add the timestamp to the ioTimeStamps vector
             process->ioTime += timeInPreviousState;
             scheduler->ioTimeStamps.push_back({process->stateTimeStamp, currentTime});
             process->stateTimeStamp = currentTime;
+
+            // Add the process to the ready queue, no event is generated
             scheduler->addProcess(process);
             callScheduler = true;
+
             // Print the verbose output if the verbose flag is set
             if (verbose)
                 verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr);
             break;
-        case TO_PREEMPT:
-            // Must come from RUNNING
-            // Add the process to the ready queue, no event is generated
+
+        case TO_PREEMPT: // Must come from RUNNING
+            // Set the currentRunningProcess to NULL as the process is being preempted
+            currentRunningProcess = nullptr;
             process->stateTimeStamp = currentTime;
-            scheduler->addProcess(process);
+
+            // Print the verbose output if the verbose flag is set
+            if (verbose)
+            {
+                string message = "[cb=" + to_string(process->currentCpuBurst) + " rem=" + to_string(process->remainingCpuTime) + " prio=" + to_string(process->dynamicPriority) + "]";
+                verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
+            }
+
             callScheduler = true;
+            if (process->remainingCpuTime > 0)
+                // Add the process to the ready queue, no event is generated
+                scheduler->addProcess(process);
+            else // Process has no remaining CPU time, so it is done executing
+            {
+                process->finishTime = currentTime;
+                process->turnaroundTime = currentTime - process->arrivalTime;
+                if (verbose) // Show that the process is done executing
+                    verbosePrint(currentTime, process->processNumber, timeInPreviousState, "", "");
+            }
             break;
+
         case TO_RUNNING:
         {
             // Create event for preemption or blocking
             // Must come from READY
             currentRunningProcess = process;
             int cpuBurst = process->cpuBurst;
-            int currentCpuBurst = randomNumberGenerator(cpuBurst);
-            int quantum = scheduler->quantum;
+            // Generate the CPU burst only if the current CPU burst is 0, else use the current CPU burst
+            process->currentCpuBurst = process->currentCpuBurst > 0 ? process->currentCpuBurst : randomNumberGenerator(cpuBurst);
             int remainingExecutionTime = process->remainingCpuTime;
             process->cpuWaitTime += timeInPreviousState;
-            if (remainingExecutionTime < currentCpuBurst)
-                currentCpuBurst = remainingExecutionTime;
+
             // Print the verbose output if the verbose flag is set
             if (verbose)
             {
-                string message = "[cb=" + to_string(currentCpuBurst) + " rem=" + to_string(remainingExecutionTime) + " prio=" + to_string(process->dynamicPriority) + "]";
+                string message = "[cb=" + to_string(process->currentCpuBurst) + " rem=" + to_string(remainingExecutionTime) + " prio=" + to_string(process->dynamicPriority) + "]";
                 verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
             }
+
             if (remainingExecutionTime > 0)
             {
-                int timeToNextEvent = currentTime + currentCpuBurst;
-                int remainingExecutionTimeAfterCurrentCpuBurst = remainingExecutionTime - currentCpuBurst;
+                // Check if the process needs to be preempted
+                bool preempt = false;
+                int currentCpuBurstForExecution = process->currentCpuBurst;
+                // If the generated CPU burst is greater than the quantum, then the process needs to be preempted
+                if (currentCpuBurstForExecution > scheduler->quantum)
+                {
+                    preempt = true;
+                    currentCpuBurstForExecution = scheduler->quantum;
+                }
+                if (remainingExecutionTime < currentCpuBurstForExecution)
+                    currentCpuBurstForExecution = remainingExecutionTime;
+                process->currentCpuBurst -= currentCpuBurstForExecution;
+
+                // Calculate the time to the next event and the remaining execution time after the current CPU burst
+                int timeToNextEvent = currentTime + currentCpuBurstForExecution;
+                int remainingExecutionTimeAfterCurrentCpuBurst = remainingExecutionTime - currentCpuBurstForExecution;
                 process->remainingCpuTime = remainingExecutionTimeAfterCurrentCpuBurst;
                 process->stateTimeStamp = currentTime;
                 process->dynamicPriority--;
                 if (process->dynamicPriority <= 0)
                     process->dynamicPriority = process->staticPriority - 1;
 
-                // Create an event for the process to transition to BLOCKED
+                // Create an event for the process to transition to READY or BLOCKED
                 Event *event = new Event();
                 event->timeStamp = timeToNextEvent;
                 event->process = process;
-                event->oldState = RUNNING;
-                event->newState = BLOCKED;
-                event->transition = TO_BLOCKED;
+                if (preempt)
+                {
+                    event->oldState = RUNNING;
+                    event->newState = READY;
+                    event->transition = TO_PREEMPT;
+                }
+                else
+                {
+                    event->oldState = RUNNING;
+                    event->newState = BLOCKED;
+                    event->transition = TO_BLOCKED;
+                }
                 addEvent(event, showEventQueue);
             }
             break;
         }
+
         case TO_BLOCKED:
             currentRunningProcess = nullptr;
             callScheduler = true;
