@@ -71,9 +71,15 @@ public:
     int ioTime = 0;                                // The time spent in I/O
     vector<vector<int>> ioTimeStamps;              // The time stamps for I/O
     int cpuTime = 0;                               // The time spent by CPU
-    deque<Process *> readyQueue;                   // The ready queue to store the processes
     virtual void addProcess(Process *process) = 0; // A function to add a process to the ready queue
     virtual Process *getNextProcess() = 0;         // A function to get the next process from the ready queue
+
+    void decrementDynamicPriority(Process *process) // A function to decrement the dynamic priority of the process
+    {
+        process->dynamicPriority--;
+        if (process->dynamicPriority == -1)
+            process->dynamicPriority = process->staticPriority - 1;
+    }
 };
 
 // Initialize the scheduler object.
@@ -82,6 +88,7 @@ Scheduler *scheduler = nullptr;
 // A First Come First Serve (FCFS) Scheduler class
 class FCFS : public Scheduler
 {
+    deque<Process *> readyQueue; // The ready queue to store the processes
 public:
     // Constructor to initialize the name of the scheduler
     FCFS()
@@ -108,6 +115,7 @@ public:
 // A Last Come First Serve (LCFS) Scheduler class
 class LCFS : public Scheduler
 {
+    deque<Process *> readyQueue; // The ready queue to store the processes
 public:
     // Constructor to initialize the name of the scheduler
     LCFS()
@@ -134,6 +142,7 @@ public:
 // A Shortest Remaining Time First (SRTF) Scheduler class
 class SRTF : public Scheduler
 {
+    deque<Process *> readyQueue; // The ready queue to store the processes
 public:
     // Constructor to initialize the name of the scheduler
     SRTF()
@@ -165,6 +174,7 @@ public:
 // A Round Robin (RR) Scheduler class
 class RoundRobin : public Scheduler
 {
+    deque<Process *> readyQueue; // The ready queue to store the processes
 public:
     // Constructor to initialize the name of the scheduler and the quantum
     RoundRobin(int quantum)
@@ -185,6 +195,74 @@ public:
             return NULL;
         Process *process = readyQueue.front();
         readyQueue.pop_front();
+        return process;
+    }
+};
+
+// A Priority Scheduler class
+class Priority : public Scheduler
+{
+    // Initialise an active queue and an expired queue.
+    deque<Process *> *activeQueue;
+    deque<Process *> *expiredQueue;
+
+public:
+    // Constructor to initialize the name of the scheduler, the quantum, and the maximum number of priorities
+    Priority(int quantum, int maxprios)
+    {
+        name = "PRIO " + to_string(quantum);
+        this->quantum = quantum;
+        this->maxprios = maxprios;
+        activeQueue = new deque<Process *>[maxprios];
+        expiredQueue = new deque<Process *>[maxprios];
+    }
+    // Add a process to the active queue based on the dynamic priority
+    void addProcess(Process *process)
+    {
+        activeQueue[process->dynamicPriority].push_back(process);
+    }
+
+    // Override the decrementDynamicPriority function to add the process to the expired queue
+    void decrementDynamicPriority(Process *process)
+    {
+        if (process->dynamicPriority == -1)
+        {
+            process->dynamicPriority = process->staticPriority - 1;
+            expiredQueue[process->dynamicPriority].push_back(process);
+        }
+        process->dynamicPriority--;
+    }
+
+    // Get the next process from the active queue based on the dynamic priority
+    Process *getNextProcess()
+    {
+        Process *process = NULL;
+        for (int i = maxprios - 1; i >= 0; i--)
+        {
+            if (!activeQueue[i].empty())
+            {
+                process = activeQueue[i].front();
+                activeQueue[i].pop_front();
+                return process;
+            }
+        }
+        // If no process is found in the active queue
+        // swap the active and expired queues
+        deque<Process *> *temp = activeQueue;
+        activeQueue = expiredQueue;
+        expiredQueue = temp;
+
+        // Find the next process in the active queue
+        for (int i = maxprios - 1; i >= 0; i--)
+        {
+            if (!activeQueue[i].empty())
+            {
+                process = activeQueue[i].front();
+                activeQueue[i].pop_front();
+                return process;
+            }
+        }
+        // Return NULL if no process is found
         return process;
     }
 };
@@ -395,11 +473,16 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             if (currentRunningProcess != nullptr && currentRunningProcess->processNumber == process->processNumber)
                 currentRunningProcess = nullptr;
 
-            // Add the I/O time to the process and add the timestamp to the ioTimeStamps vector
-            process->ioTime += timeInPreviousState;
-            scheduler->ioTimeStamps.push_back({process->stateTimeStamp, currentTime});
-            process->stateTimeStamp = currentTime;
+            if (oldState == BLOCKED) // If the process is returning from I/O
+            {
+                // Reset the dynamic priority
+                process->dynamicPriority = process->staticPriority - 1;
+                // Add the I/O time to the process and add the timestamp to the ioTimeStamps vector
+                process->ioTime += timeInPreviousState;
+                scheduler->ioTimeStamps.push_back({process->stateTimeStamp, currentTime});
+            }
 
+            process->stateTimeStamp = currentTime;
             // Add the process to the ready queue, no event is generated
             scheduler->addProcess(process);
             callScheduler = true;
@@ -421,6 +504,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
             }
 
+            scheduler->decrementDynamicPriority(process);
             callScheduler = true;
             if (process->remainingCpuTime > 0)
                 // Add the process to the ready queue, no event is generated
@@ -434,16 +518,17 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             }
             break;
 
-        case TO_RUNNING:
+        case TO_RUNNING: // Must come from READY
         {
-            // Create event for preemption or blocking
-            // Must come from READY
+            // Set the currentRunningProcess to the process as it is now running
             currentRunningProcess = process;
+            // Set the CPU wait time of the process as the time spent in the ready state
+            process->cpuWaitTime += timeInPreviousState;
+            // Fetch the defined CPU burst and the remaining execution time of the process
             int cpuBurst = process->cpuBurst;
+            int remainingExecutionTime = process->remainingCpuTime;
             // Generate the CPU burst only if the current CPU burst is 0, else use the current CPU burst
             process->currentCpuBurst = process->currentCpuBurst > 0 ? process->currentCpuBurst : randomNumberGenerator(cpuBurst);
-            int remainingExecutionTime = process->remainingCpuTime;
-            process->cpuWaitTime += timeInPreviousState;
 
             // Print the verbose output if the verbose flag is set
             if (verbose)
@@ -452,19 +537,25 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
             }
 
+            // Check if the process is yet to finish executing
             if (remainingExecutionTime > 0)
             {
                 // Check if the process needs to be preempted
                 bool preempt = false;
+                // Fetch the current CPU burst for execution
                 int currentCpuBurstForExecution = process->currentCpuBurst;
                 // If the generated CPU burst is greater than the quantum, then the process needs to be preempted
                 if (currentCpuBurstForExecution > scheduler->quantum)
                 {
                     preempt = true;
+                    // Set the current CPU burst for execution as the quantum
                     currentCpuBurstForExecution = scheduler->quantum;
                 }
+                // If the current CPU burst is greater than the remaining execution time,
+                // then set the current CPU burst as the remaining execution time
                 if (remainingExecutionTime < currentCpuBurstForExecution)
                     currentCpuBurstForExecution = remainingExecutionTime;
+                // Update the remaining execution time of the process
                 process->currentCpuBurst -= currentCpuBurstForExecution;
 
                 // Calculate the time to the next event and the remaining execution time after the current CPU burst
@@ -472,9 +563,6 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 int remainingExecutionTimeAfterCurrentCpuBurst = remainingExecutionTime - currentCpuBurstForExecution;
                 process->remainingCpuTime = remainingExecutionTimeAfterCurrentCpuBurst;
                 process->stateTimeStamp = currentTime;
-                process->dynamicPriority--;
-                if (process->dynamicPriority <= 0)
-                    process->dynamicPriority = process->staticPriority - 1;
 
                 // Create an event for the process to transition to READY or BLOCKED
                 Event *event = new Event();
@@ -503,6 +591,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             // create an event for when process becomes READY again
             if (process->remainingCpuTime > 0) // Execute only if the process has remaining CPU time
             {
+                scheduler->decrementDynamicPriority(process);
                 // Calculate the I/O burst and the time to the next event
                 int ioBurst = process->ioBurst;
                 int currentIoBurst = randomNumberGenerator(ioBurst);
@@ -685,7 +774,7 @@ void initScheduler(char *schedulerSpec)
     {
         // Extract the quantum and maxprios
         parseSchedulerSpecificationNumMaxprios(&quantum, &maxprios, schedulerSpec);
-        // scheduler = new Priority(quantum, maxprios);
+        scheduler = new Priority(quantum, maxprios);
     }
     else if (schedulerSpec[0] == 'E') // Preemptive Priority
     {
