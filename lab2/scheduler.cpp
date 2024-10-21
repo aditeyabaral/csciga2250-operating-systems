@@ -16,20 +16,21 @@ using namespace std;
 class Process
 {
 public:
-    int processNumber;    // The process number
-    int arrivalTime;      // The arrival time of the process
-    int cpuTime;          // The CPU time of the process
-    int remainingCpuTime; // The remaining CPU time of the process
-    int cpuBurst;         // The defined CPU burst of the process
-    int currentCpuBurst;  // The current CPU burst of the process
-    int ioBurst;          // The defined I/O burst of the process
-    int staticPriority;   // The static priority of the process
-    int dynamicPriority;  // The dynamic priority of the process
-    int stateTimeStamp;   // The time stamp when the process changed state
-    int finishTime;       // The finish time of the process
-    int turnaroundTime;   // The turnaround time of the process
-    int ioTime = 0;       // The time spent in I/O
-    int cpuWaitTime = 0;  // The time spent waiting for the CPU in the ready state
+    int processNumber;            // The process number
+    int arrivalTime;              // The arrival time of the process
+    int cpuTime;                  // The CPU time of the process
+    int remainingCpuTime;         // The remaining CPU time of the process
+    int cpuBurst;                 // The defined CPU burst of the process
+    int currentCpuBurst;          // The current CPU burst of the process
+    int ioBurst;                  // The defined I/O burst of the process
+    int staticPriority;           // The static priority of the process
+    int dynamicPriority;          // The dynamic priority of the process
+    int stateTimeStamp;           // The time stamp when the process changed state
+    int finishTime;               // The finish time of the process
+    int turnaroundTime;           // The turnaround time of the process
+    int ioTime = 0;               // The time spent in I/O
+    int cpuWaitTime = 0;          // The time spent waiting for the CPU in the ready state
+    int lastCpuExecutionTime = 0; // The time of the last CPU execution
 };
 
 // A state enum to store the state of the process
@@ -65,16 +66,25 @@ public:
 class Scheduler
 {
 public:
-    string name;                                   // The name of the scheduler
-    int quantum = 10000;                           // The quantum of the scheduler. Default value is 10K
-    int maxprios = 4;                              // The maximum number of priorities. Default value is 4
-    int ioTime = 0;                                // The time spent in I/O
-    vector<vector<int>> ioTimeStamps;              // The time stamps for I/O
-    int cpuTime = 0;                               // The time spent by CPU
+    string name;                      // The name of the scheduler
+    int quantum = 10000;              // The quantum of the scheduler. Default value is 10K
+    int maxprios = 4;                 // The maximum number of priorities. Default value is 4
+    int ioTime = 0;                   // The time spent in I/O
+    vector<vector<int>> ioTimeStamps; // The time stamps for I/O
+    int cpuTime = 0;                  // The time spent by CPU
+    virtual bool checkEventPreemption(Process *activatedProcess, Process *currentRunningProcess, int currentTime, bool showPreemptionDecision)
+    {
+        // A function to test if the current process should be preempt the running process
+        // Default implementation is to return false
+        return false;
+    }
     virtual void addProcess(Process *process) = 0; // A function to add a process to the ready queue
     virtual Process *getNextProcess() = 0;         // A function to get the next process from the ready queue
     virtual void showReadyQueue() = 0;             // A function to show the ready queue
 };
+
+// A queue to store the events, implemented as a vector for inserting events in order of the timestamp
+vector<Event *> eventQueue;
 
 // Initialize the scheduler object.
 Scheduler *scheduler = nullptr;
@@ -333,6 +343,116 @@ public:
     }
 };
 
+class PreemptivePriority : public Scheduler
+{
+    // Initialise an active queue and an expired queue.
+    deque<Process *> *activeQueue;
+    deque<Process *> *expiredQueue;
+
+public:
+    // Constructor to initialize the name of the scheduler, the quantum, and the maximum number of priorities
+    PreemptivePriority(int quantum, int maxprios)
+    {
+        name = "PREPRIO " + to_string(quantum);
+        this->quantum = quantum;
+        this->maxprios = maxprios;
+        activeQueue = new deque<Process *>[maxprios];
+        expiredQueue = new deque<Process *>[maxprios];
+    }
+    // Add a process to the active queue based on the dynamic priority
+    void addProcess(Process *process)
+    {
+        if (process->dynamicPriority <= -1)
+        {
+            process->dynamicPriority = process->staticPriority - 1;
+            expiredQueue[process->dynamicPriority].push_back(process);
+        }
+        else
+            activeQueue[process->dynamicPriority].push_back(process);
+    }
+
+    // Get the next process from the active queue based on the dynamic priority
+    Process *getNextProcess()
+    {
+        Process *process = NULL;
+        for (int i = maxprios - 1; i >= 0; i--)
+        {
+            if (!activeQueue[i].empty())
+            {
+                process = activeQueue[i].front();
+                activeQueue[i].pop_front();
+                return process;
+            }
+        }
+        // If no process is found in the active queue, swap the active and expired queues
+        deque<Process *> *temp = activeQueue;
+        activeQueue = expiredQueue;
+        expiredQueue = temp;
+
+        // Find the next process in the active queue
+        for (int i = maxprios - 1; i >= 0; i--)
+        {
+            if (!activeQueue[i].empty())
+            {
+                process = activeQueue[i].front();
+                activeQueue[i].pop_front();
+                return process;
+            }
+        }
+        // Return NULL if no process is found
+        return process;
+    }
+
+    // Show the ready queue
+    void showReadyQueue()
+    {
+        int totalProcesses = 0;
+        for (int i = 0; i < maxprios; i++)
+            totalProcesses += activeQueue[i].size() + expiredQueue[i].size();
+        if (totalProcesses == 0)
+            cout << "SCHED (0): ";
+        else
+        {
+            cout << "SCHED (" << totalProcesses << "): ";
+            for (int i = maxprios - 1; i >= 0; i--)
+            {
+                for (int j = 0; j < activeQueue[i].size(); j++)
+                    cout << "(t=" << activeQueue[i][j]->stateTimeStamp << " pid=" << activeQueue[i][j]->processNumber << " prio=" << activeQueue[i][j]->dynamicPriority << " active) ";
+                for (int j = 0; j < expiredQueue[i].size(); j++)
+                    cout << "(t=" << expiredQueue[i][j]->stateTimeStamp << " pid=" << expiredQueue[i][j]->processNumber << " prio=" << expiredQueue[i][j]->dynamicPriority << ") expired) ";
+            }
+            cout << endl;
+        }
+    }
+
+    // Test if the current process should preempt the running process
+    bool checkEventPreemption(Process *activatedProcess, Process *currentRunningProcess, int currentTime, bool showPreemptionDecision) override
+    {
+        if (currentRunningProcess == nullptr)
+            return false; // No process is running, so no need to preempt
+        // Check if the dynamic priority of the activated process is higher than the dynamic priority of the currently running process
+        bool dynamicPriorityHigher = activatedProcess->dynamicPriority > currentRunningProcess->dynamicPriority;
+        // Check if the currently running process has an event pending for the current time stamp
+        bool eventPending = false;
+        for (int i = 0; i < eventQueue.size(); i++)
+        {
+            if (eventQueue[i]->timeStamp == currentTime && eventQueue[i]->process->processNumber == currentRunningProcess->processNumber)
+            {
+                eventPending = true;
+                break;
+            }
+        }
+        // Preempt the process if the dynamic priority of the activated process is higher than the dynamic priority of the currently running process
+        bool preempt = dynamicPriorityHigher && !eventPending;
+        // Print the preemption decision if the showPreemptionDecision flag is set
+        if (showPreemptionDecision)
+            cout << "\t--> PrioPreempt activatedProcess.dynamicPriority > currentRunningProcess.dynamicPriority: " << dynamicPriorityHigher
+                 << " noEventPending: " << !eventPending
+                 << " Decision: " << (preempt ? "YES" : "NO") << endl;
+        return preempt;
+    }
+};
+
 // Variables to store random values and the random index offset
 int *randomValues;
 int MAX_RANDOM_VALUES_LENGTH;
@@ -362,9 +482,6 @@ void readRandomFile(FILE *randomFile)
         }
     }
 }
-
-// A queue to store the events, implemented as a vector for inserting events in order of the timestamp
-vector<Event *> eventQueue;
 
 // A vector to store the processes
 vector<Process *> processes;
@@ -541,6 +658,10 @@ void simulate(bool showStateTransition, bool showRunQueue, bool showEventQueue, 
             if (currentRunningProcess != nullptr && currentRunningProcess->processNumber == process->processNumber)
                 currentRunningProcess = nullptr;
 
+            // Print the state transition if the showStateTransition flag is set
+            if (showStateTransition)
+                displayStateTransition(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr);
+
             if (oldState == BLOCKED) // If the process is returning from I/O
             {
                 // Reset the dynamic priority
@@ -548,6 +669,34 @@ void simulate(bool showStateTransition, bool showRunQueue, bool showEventQueue, 
                 // Add the I/O time to the process and add the timestamp to the ioTimeStamps vector
                 process->ioTime += timeInPreviousState;
                 scheduler->ioTimeStamps.push_back({process->stateTimeStamp, currentTime});
+            }
+
+            // Check if the activated process can preempt the currently running process
+            // Applicable only for PreemptivePriority scheduler
+            if (scheduler->checkEventPreemption(process, currentRunningProcess, currentTime, showPreemptionDecision))
+            {
+                int timeSpentInRunningState = currentTime - currentRunningProcess->stateTimeStamp;
+                // Remove the future event for the currently running process
+                for (int i = 0; i < eventQueue.size(); i++)
+                {
+                    if (eventQueue[i]->process->processNumber == currentRunningProcess->processNumber)
+                    {
+                        eventQueue.erase(eventQueue.begin() + i);
+                        break;
+                    }
+                }
+                // Reset the current CPU burst and the remaining CPU time of the currently running process
+                // Undo the entire CPU burst and add the current time spent in the running state
+                currentRunningProcess->currentCpuBurst = currentRunningProcess->currentCpuBurst + currentRunningProcess->lastCpuExecutionTime - timeSpentInRunningState;
+                currentRunningProcess->remainingCpuTime = currentRunningProcess->remainingCpuTime + currentRunningProcess->lastCpuExecutionTime - timeSpentInRunningState;
+                // Create a new event for the currently running process to transition to READY
+                Event *preemptEvent = new Event();
+                preemptEvent->timeStamp = currentTime;
+                preemptEvent->process = currentRunningProcess;
+                preemptEvent->oldState = RUNNING;
+                preemptEvent->newState = READY;
+                preemptEvent->transition = TO_PREEMPT;
+                addEvent(preemptEvent, showEventQueue);
             }
 
             // Set the state timestamp of the process as the current time
@@ -559,10 +708,6 @@ void simulate(bool showStateTransition, bool showRunQueue, bool showEventQueue, 
                 scheduler->showReadyQueue();
             // Call the scheduler to get the next process
             callScheduler = true;
-
-            // Print the state transition if the showStateTransition flag is set
-            if (showStateTransition)
-                displayStateTransition(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr);
             break;
 
         case TO_PREEMPT: // Must come from RUNNING
@@ -641,7 +786,7 @@ void simulate(bool showStateTransition, bool showRunQueue, bool showEventQueue, 
                     currentCpuBurstForExecution = remainingExecutionTime;
                 // Update the remaining execution time of the process
                 process->currentCpuBurst -= currentCpuBurstForExecution;
-
+                process->lastCpuExecutionTime = currentCpuBurstForExecution;
                 // Calculate the time to the next event and the remaining execution time after the current CPU burst
                 int timeToNextEvent = currentTime + currentCpuBurstForExecution;
                 int remainingExecutionTimeAfterCurrentCpuBurst = remainingExecutionTime - currentCpuBurstForExecution;
@@ -874,7 +1019,7 @@ void initScheduler(char *schedulerSpec)
     {
         // Extract the quantum and maxprios
         parseSchedulerSpecificationNumMaxprios(&quantum, &maxprios, schedulerSpec);
-        // scheduler = new PreemptivePriority(quantum, maxprios);
+        scheduler = new PreemptivePriority(quantum, maxprios);
     }
 }
 

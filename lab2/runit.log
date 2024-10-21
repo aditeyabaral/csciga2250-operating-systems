@@ -7,9 +7,7 @@ sched=<./scheduler> outdir=<./outdir/>
 ./scheduler -sP2 input0 ./rfile
 ./scheduler -sP5:3 input0 ./rfile
 ./scheduler -sE2:5 input0 ./rfile
-./runit.sh: line 101: 24546 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sE4 input0 ./rfile
-./runit.sh: line 101: 24548 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sF input1 ./rfile
 ./scheduler -sL input1 ./rfile
 ./scheduler -sS input1 ./rfile
@@ -18,9 +16,7 @@ sched=<./scheduler> outdir=<./outdir/>
 ./scheduler -sP2 input1 ./rfile
 ./scheduler -sP5:3 input1 ./rfile
 ./scheduler -sE2:5 input1 ./rfile
-./runit.sh: line 101: 24564 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sE4 input1 ./rfile
-./runit.sh: line 101: 24566 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sF input2 ./rfile
 ./scheduler -sL input2 ./rfile
 ./scheduler -sS input2 ./rfile
@@ -29,9 +25,7 @@ sched=<./scheduler> outdir=<./outdir/>
 ./scheduler -sP2 input2 ./rfile
 ./scheduler -sP5:3 input2 ./rfile
 ./scheduler -sE2:5 input2 ./rfile
-./runit.sh: line 101: 24575 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sE4 input2 ./rfile
-./runit.sh: line 101: 24577 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sF input3 ./rfile
 ./scheduler -sL input3 ./rfile
 ./scheduler -sS input3 ./rfile
@@ -40,9 +34,7 @@ sched=<./scheduler> outdir=<./outdir/>
 ./scheduler -sP2 input3 ./rfile
 ./scheduler -sP5:3 input3 ./rfile
 ./scheduler -sE2:5 input3 ./rfile
-./runit.sh: line 101: 24586 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sE4 input3 ./rfile
-./runit.sh: line 101: 24588 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sF input4 ./rfile
 ./scheduler -sL input4 ./rfile
 ./scheduler -sS input4 ./rfile
@@ -51,9 +43,7 @@ sched=<./scheduler> outdir=<./outdir/>
 ./scheduler -sP2 input4 ./rfile
 ./scheduler -sP5:3 input4 ./rfile
 ./scheduler -sE2:5 input4 ./rfile
-./runit.sh: line 101: 24597 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sE4 input4 ./rfile
-./runit.sh: line 101: 24599 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sF input5 ./rfile
 ./scheduler -sL input5 ./rfile
 ./scheduler -sS input5 ./rfile
@@ -62,9 +52,7 @@ sched=<./scheduler> outdir=<./outdir/>
 ./scheduler -sP2 input5 ./rfile
 ./scheduler -sP5:3 input5 ./rfile
 ./scheduler -sE2:5 input5 ./rfile
-./runit.sh: line 101: 24609 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sE4 input5 ./rfile
-./runit.sh: line 101: 24611 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sF input6 ./rfile
 ./scheduler -sL input6 ./rfile
 ./scheduler -sS input6 ./rfile
@@ -73,9 +61,7 @@ sched=<./scheduler> outdir=<./outdir/>
 ./scheduler -sP2 input6 ./rfile
 ./scheduler -sP5:3 input6 ./rfile
 ./scheduler -sE2:5 input6 ./rfile
-./runit.sh: line 101: 24620 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sE4 input6 ./rfile
-./runit.sh: line 101: 24622 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sF input7 ./rfile
 ./scheduler -sL input7 ./rfile
 ./scheduler -sS input7 ./rfile
@@ -84,6 +70,4 @@ sched=<./scheduler> outdir=<./outdir/>
 ./scheduler -sP2 input7 ./rfile
 ./scheduler -sP5:3 input7 ./rfile
 ./scheduler -sE2:5 input7 ./rfile
-./runit.sh: line 101: 24631 Segmentation fault      (core dumped) $@ > ${OUTFILE}
 ./scheduler -sE4 input7 ./rfile
-./runit.sh: line 101: 24633 Segmentation fault      (core dumped) $@ > ${OUTFILE}
