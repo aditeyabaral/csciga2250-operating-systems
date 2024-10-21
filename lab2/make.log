@@ -1,0 +1,2 @@
+rm -f scheduler *~
+g++ -g scheduler.cpp -o scheduler
