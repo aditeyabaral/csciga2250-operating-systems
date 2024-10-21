@@ -475,6 +475,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             process->stateTimeStamp = currentTime;
             // Add the process to the ready queue, no event is generated
             scheduler->addProcess(process);
+            // Call the scheduler to get the next process
             callScheduler = true;
 
             // Print the verbose output if the verbose flag is set
@@ -495,6 +496,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
             }
 
+            // Call the scheduler to get the next process
             callScheduler = true;
             if (process->remainingCpuTime > 0) // If the process has remaining CPU time
             {
@@ -505,9 +507,12 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             }
             else // Process has no remaining CPU time, so it is done executing
             {
+                // Set the current time as the finish time of the process
                 process->finishTime = currentTime;
+                // Calculate the turnaround time of the process
                 process->turnaroundTime = currentTime - process->arrivalTime;
-                if (verbose) // Show that the process is done executing
+                // Print the verbose output if the verbose flag is set
+                if (verbose)
                     verbosePrint(currentTime, process->processNumber, timeInPreviousState, "", "");
             }
             break;
@@ -585,12 +590,13 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
         case TO_BLOCKED: // Must come from RUNNING
             // Set the currentRunningProcess to NULL as the process is transitioning to the blocked state
             currentRunningProcess = nullptr;
+            // Call the scheduler to get the next process
             callScheduler = true;
 
             // Create an event for when process becomes READY again
             if (process->remainingCpuTime > 0) // Execute only if the process has remaining CPU time
             {
-                // Calculate the I/O burst and the time to the next event
+                // Calculate the I/O burst
                 int ioBurst = process->ioBurst;
                 int currentIoBurst = randomNumberGenerator(ioBurst);
                 // Calculate the time to the next event and set the state timestamp of the process as the current time
@@ -615,8 +621,11 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             }
             else // Process has no remaining CPU time, so it is done executing
             {
+                // Set the current time as the finish time of the process
                 process->finishTime = currentTime;
+                // Calculate the turnaround time of the process
                 process->turnaroundTime = currentTime - process->arrivalTime;
+                // Print the verbose output if the verbose flag is set
                 if (verbose)
                     verbosePrint(currentTime, process->processNumber, timeInPreviousState, "", "");
             }
@@ -627,13 +636,15 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
         if (callScheduler)
         {
             if (getNextEventTimeStamp() == currentTime)
+                // If the next event is at the same time as the current time, process the next event
                 continue;
+
             callScheduler = false;
-            if (currentRunningProcess == nullptr)
+            if (currentRunningProcess == nullptr) // If there is no running process
             {
                 // Get the next process from the scheduler
                 currentRunningProcess = scheduler->getNextProcess();
-                if (currentRunningProcess == nullptr)
+                if (currentRunningProcess == nullptr) // If there are no more processes in the ready queue
                     continue;
 
                 // Create an event for the process to transition to RUNNING
@@ -652,7 +663,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
 // A function to compute the total I/O time by merging the overlapping I/O intervals
 void computeSchedulerTotalIoTime()
 {
-    if (scheduler->ioTimeStamps.empty())
+    if (scheduler->ioTimeStamps.empty()) // If there are no I/O time stamps, return
         return;
 
     // Sort the intervals based on the start time
@@ -667,10 +678,8 @@ void computeSchedulerTotalIoTime()
     {
         // Check for overlap
         if (scheduler->ioTimeStamps[i][0] <= end)
-        {
             // Overlapping intervals, update the end time
             end = max(end, scheduler->ioTimeStamps[i][1]);
-        }
         else
         {
             // No overlap, add the duration and reset start and end
@@ -709,12 +718,13 @@ void displayProcessInfo()
         // cout << setw(4) << process->ioTime << " ";
         // cout << setw(4) << process->cpuWaitTime << endl;
 
-        // Update the process statistics from the current process
+        // Update the simulation finish time if the current process finish time is greater
         simulationFinishTime = (process->finishTime > simulationFinishTime)
                                    ? process->finishTime
                                    : simulationFinishTime;
 
         // TODO: Computer scheduler total CPU time in simulate function
+        // Update the scheduler statistics from the current process
         scheduler->cpuTime += process->cpuTime;
         totalTurnaroundTime += process->turnaroundTime;
         totalWaitTime += process->cpuWaitTime;
@@ -749,7 +759,7 @@ void parseSchedulerSpecificationNumMaxprios(int *quantum, int *maxprios, char *s
     num = strtok(schedulerSpec + 1, ":");
     maxpriosStr = strtok(NULL, ":");
     *quantum = atoi(num);
-    if (maxpriosStr != NULL)
+    if (maxpriosStr != NULL) // If the maxprios value is specified
         *maxprios = atoi(maxpriosStr);
 }
 
@@ -795,23 +805,23 @@ int main(int argc, char *argv[])
     {
         switch (opt)
         {
-        case 'h':
+        case 'h': // Show help message
             showHelp = true;
             break;
-        case 'v':
+        case 'v': // Verbose mode tp print event transitions
             verbose = true;
             break;
         case 't':
-            traceEventExecution = true;
+            traceEventExecution = true; // Trace event execution
             break;
         case 'e':
-            showEventQueue = true;
+            showEventQueue = true; // Print event queue
             break;
         case 'p':
-            showPreemption = true;
+            showPreemption = true; // Print preemption
             break;
         case 's':
-            initScheduler(optarg);
+            initScheduler(optarg); // Initialise the scheduler based on the scheduler specification
             break;
         default:
             cout << "Usage: " << argv[0] << " [-h] [-v] [-t] [-e] [-p] [-s <scheduler>] inputFile randFile" << endl;
@@ -840,7 +850,7 @@ int main(int argc, char *argv[])
     {
         // Open the input file
         inputFile = fopen(argv[optind++], "r");
-        if (inputFile == NULL)
+        if (inputFile == NULL) // Check if the input file can be opened
         {
             cout << "Error: Cannot open input file. Use -h for help." << endl;
             exit(1);
@@ -850,7 +860,7 @@ int main(int argc, char *argv[])
         {
             // Open the random file
             randomFile = fopen(argv[optind++], "r");
-            if (randomFile == NULL)
+            if (randomFile == NULL) // Check if the random file can be opened
             {
                 cout << "Error: Cannot open random file. Use -h for help." << endl;
                 exit(1);
