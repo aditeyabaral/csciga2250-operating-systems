@@ -418,7 +418,7 @@ int getNextEventTimeStamp()
 }
 
 // A function to print the verbose output during state transitions
-void verbosePrint(int currentTime, int processNumber, int timeInPreviousState, string oldState = "", string newState = "", string message = "")
+void displayStateTransition(int currentTime, int processNumber, int timeInPreviousState, string oldState = "", string newState = "", string message = "")
 {
     string transitionStr;
     if (oldState == "" && newState == "")
@@ -430,7 +430,7 @@ void verbosePrint(int currentTime, int processNumber, int timeInPreviousState, s
 }
 
 // A function to simulate the execution of events
-void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool showPreemption)
+void simulate(bool showStateTransition, bool showRunQueue, bool showEventQueue, bool showPreemptionDecision)
 {
     Event *event;
 
@@ -478,9 +478,9 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             // Call the scheduler to get the next process
             callScheduler = true;
 
-            // Print the verbose output if the verbose flag is set
-            if (verbose)
-                verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr);
+            // Print the state transition if the showStateTransition flag is set
+            if (showStateTransition)
+                displayStateTransition(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr);
             break;
 
         case TO_PREEMPT: // Must come from RUNNING
@@ -489,11 +489,11 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             // Set the state timestamp of the process as the current time
             process->stateTimeStamp = currentTime;
 
-            // Print the verbose output if the verbose flag is set
-            if (verbose)
+            // Print the state transition if the showStateTransition flag is set
+            if (showStateTransition)
             {
                 string message = "[cb=" + to_string(process->currentCpuBurst) + " rem=" + to_string(process->remainingCpuTime) + " prio=" + to_string(process->dynamicPriority) + "]";
-                verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
+                displayStateTransition(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
             }
 
             // Call the scheduler to get the next process
@@ -511,9 +511,9 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 process->finishTime = currentTime;
                 // Calculate the turnaround time of the process
                 process->turnaroundTime = currentTime - process->arrivalTime;
-                // Print the verbose output if the verbose flag is set
-                if (verbose)
-                    verbosePrint(currentTime, process->processNumber, timeInPreviousState, "", "");
+                // Print the state transition if the showStateTransition flag is set
+                if (showStateTransition)
+                    displayStateTransition(currentTime, process->processNumber, timeInPreviousState, "", "");
             }
             break;
 
@@ -529,11 +529,11 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             // Generate the CPU burst only if the current CPU burst is 0, else use the current CPU burst
             process->currentCpuBurst = process->currentCpuBurst > 0 ? process->currentCpuBurst : randomNumberGenerator(cpuBurst);
 
-            // Print the verbose output if the verbose flag is set
-            if (verbose)
+            // Print the state transition if the showStateTransition flag is set
+            if (showStateTransition)
             {
                 string message = "[cb=" + to_string(process->currentCpuBurst) + " rem=" + to_string(remainingExecutionTime) + " prio=" + to_string(process->dynamicPriority) + "]";
-                verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
+                displayStateTransition(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
             }
 
             // Check if the process is yet to finish executing
@@ -603,11 +603,11 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 int timeToNextEvent = currentTime + currentIoBurst;
                 process->stateTimeStamp = currentTime;
 
-                // Print the verbose output if the verbose flag is set
-                if (verbose)
+                // Print the state transition if the showStateTransition flag is set
+                if (showStateTransition)
                 {
                     string message = "[ib=" + to_string(currentIoBurst) + " rem=" + to_string(process->remainingCpuTime) + "]";
-                    verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
+                    displayStateTransition(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
                 }
 
                 // Create an event for the process to transition to READY
@@ -625,9 +625,9 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 process->finishTime = currentTime;
                 // Calculate the turnaround time of the process
                 process->turnaroundTime = currentTime - process->arrivalTime;
-                // Print the verbose output if the verbose flag is set
-                if (verbose)
-                    verbosePrint(currentTime, process->processNumber, timeInPreviousState, "", "");
+                // Print the state transition if the showStateTransition flag is set
+                if (showStateTransition)
+                    displayStateTransition(currentTime, process->processNumber, timeInPreviousState, "", "");
             }
             break;
         }
@@ -797,7 +797,7 @@ void initScheduler(char *schedulerSpec)
 int main(int argc, char *argv[])
 {
     int opt;
-    bool showHelp = false, verbose = false, traceEventExecution = false, showEventQueue = false, showPreemption = false;
+    bool showHelp = false, showStateTransition = false, showRunQueue = false, showEventQueue = false, showPreemptionDecision = false;
     const char *optstring = "hvteps:";
 
     // Parse the command line arguments
@@ -808,17 +808,17 @@ int main(int argc, char *argv[])
         case 'h': // Show help message
             showHelp = true;
             break;
-        case 'v': // Verbose mode tp print event transitions
-            verbose = true;
+        case 'v': // Verbose mode to show state transitions
+            showStateTransition = true;
             break;
         case 't':
-            traceEventExecution = true; // Trace event execution
+            showRunQueue = true; // Show run queue
             break;
         case 'e':
-            showEventQueue = true; // Print event queue
+            showEventQueue = true; // Show event queue
             break;
         case 'p':
-            showPreemption = true; // Print preemption
+            showPreemptionDecision = true; // Show preemption decision for PREPRIO
             break;
         case 's':
             initScheduler(optarg); // Initialise the scheduler based on the scheduler specification
@@ -834,12 +834,12 @@ int main(int argc, char *argv[])
     {
         cout << "Usage: " << argv[0] << " [-h] [-v] [-t] [-e] [-p] [-s <schedspec>] inputfile randfile" << endl;
         cout << "Options:" << endl;
-        cout << "  -h        Show help message" << endl;
-        cout << "  -v        Verbose mode" << endl;
-        cout << "  -t        Trace event execution" << endl;
-        cout << "  -e        Print event queue" << endl;
-        cout << "  -p        Print preemption" << endl;
-        cout << "  -s        Scheduler specification (FLS | R<num> | P<num>[:<maxprio>] | E<num>[:<maxprios>])\n";
+        cout << "  -h        show help message" << endl;
+        cout << "  -v        show state transitions" << endl;
+        cout << "  -t        show run queue before and after insertion" << endl;
+        cout << "  -e        show event queue before and after insertion" << endl;
+        cout << "  -p        show preemption decision for PREPRIO" << endl;
+        cout << "  -s        scheduler specification (FLS | R<num> | P<num>[:<maxprio>] | E<num>[:<maxprios>])\n";
         exit(0);
     }
 
@@ -885,7 +885,7 @@ int main(int argc, char *argv[])
     readInputFile(inputFile, scheduler->maxprios, showEventQueue);
 
     // Run the event simulation
-    simulate(verbose, traceEventExecution, showEventQueue, showPreemption);
+    simulate(showStateTransition, showRunQueue, showEventQueue, showPreemptionDecision);
 
     // Close the input and random files
     fclose(inputFile);
