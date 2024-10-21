@@ -73,6 +73,7 @@ public:
     int cpuTime = 0;                               // The time spent by CPU
     virtual void addProcess(Process *process) = 0; // A function to add a process to the ready queue
     virtual Process *getNextProcess() = 0;         // A function to get the next process from the ready queue
+    virtual void showReadyQueue() = 0;             // A function to show the ready queue
 };
 
 // Initialize the scheduler object.
@@ -103,6 +104,20 @@ public:
         readyQueue.pop_front();
         return process;
     }
+
+    // Show the ready queue
+    void showReadyQueue()
+    {
+        if (readyQueue.empty())
+            cout << "SCHED (0): ";
+        else
+        {
+            cout << "SCHED (" << readyQueue.size() << "): ";
+            for (int i = 0; i < readyQueue.size(); i++)
+                cout << "(t=" << readyQueue[i]->stateTimeStamp << " pid=" << readyQueue[i]->processNumber << ") ";
+            cout << endl;
+        }
+    }
 };
 
 // A Last Come First Serve (LCFS) Scheduler class
@@ -129,6 +144,20 @@ public:
         Process *process = readyQueue.back();
         readyQueue.pop_back();
         return process;
+    }
+
+    // Show the ready queue
+    void showReadyQueue()
+    {
+        if (readyQueue.empty())
+            cout << "SCHED (0): ";
+        else
+        {
+            cout << "SCHED (" << readyQueue.size() << "): ";
+            for (int i = 0; i < readyQueue.size(); i++)
+                cout << "(t=" << readyQueue[i]->stateTimeStamp << " pid=" << readyQueue[i]->processNumber << ") ";
+            cout << endl;
+        }
     }
 };
 
@@ -162,6 +191,20 @@ public:
         readyQueue.erase(remove(readyQueue.begin(), readyQueue.end(), shortestProcess), readyQueue.end());
         return shortestProcess;
     }
+
+    // Show the ready queue
+    void showReadyQueue()
+    {
+        if (readyQueue.empty())
+            cout << "SCHED (0): ";
+        else
+        {
+            cout << "SCHED (" << readyQueue.size() << "): ";
+            for (int i = 0; i < readyQueue.size(); i++)
+                cout << "(t=" << readyQueue[i]->stateTimeStamp << " pid=" << readyQueue[i]->processNumber << ") ";
+            cout << endl;
+        }
+    }
 };
 
 // A Round Robin (RR) Scheduler class
@@ -189,6 +232,20 @@ public:
         Process *process = readyQueue.front();
         readyQueue.pop_front();
         return process;
+    }
+
+    // Show the ready queue
+    void showReadyQueue()
+    {
+        if (readyQueue.empty())
+            cout << "SCHED (0): ";
+        else
+        {
+            cout << "SCHED (" << readyQueue.size() << "): ";
+            for (int i = 0; i < readyQueue.size(); i++)
+                cout << "(t=" << readyQueue[i]->stateTimeStamp << " pid=" << readyQueue[i]->processNumber << ") ";
+            cout << endl;
+        }
     }
 };
 
@@ -251,6 +308,28 @@ public:
         }
         // Return NULL if no process is found
         return process;
+    }
+
+    // Show the ready queue
+    void showReadyQueue()
+    {
+        int totalProcesses = 0;
+        for (int i = 0; i < maxprios; i++)
+            totalProcesses += activeQueue[i].size() + expiredQueue[i].size();
+        if (totalProcesses == 0)
+            cout << "SCHED (0): ";
+        else
+        {
+            cout << "SCHED (" << totalProcesses << "): ";
+            for (int i = maxprios - 1; i >= 0; i--)
+            {
+                for (int j = 0; j < activeQueue[i].size(); j++)
+                    cout << "(t=" << activeQueue[i][j]->stateTimeStamp << " pid=" << activeQueue[i][j]->processNumber << " prio=" << activeQueue[i][j]->dynamicPriority << " active) ";
+                for (int j = 0; j < expiredQueue[i].size(); j++)
+                    cout << "(t=" << expiredQueue[i][j]->stateTimeStamp << " pid=" << expiredQueue[i][j]->processNumber << " prio=" << expiredQueue[i][j]->dynamicPriority << ") expired) ";
+            }
+            cout << endl;
+        }
     }
 };
 
@@ -475,6 +554,9 @@ void simulate(bool showStateTransition, bool showRunQueue, bool showEventQueue, 
             process->stateTimeStamp = currentTime;
             // Add the process to the ready queue, no event is generated
             scheduler->addProcess(process);
+            // Print the run queue if the showRunQueue flag is set
+            if (showRunQueue)
+                scheduler->showReadyQueue();
             // Call the scheduler to get the next process
             callScheduler = true;
 
@@ -504,6 +586,9 @@ void simulate(bool showStateTransition, bool showRunQueue, bool showEventQueue, 
                 process->dynamicPriority--;
                 // Add the process to the ready queue, no event is generated
                 scheduler->addProcess(process);
+                // Print the ready queue if the showRunQueue flag is set
+                if (showRunQueue)
+                    scheduler->showReadyQueue();
             }
             else // Process has no remaining CPU time, so it is done executing
             {
@@ -796,6 +881,7 @@ void initScheduler(char *schedulerSpec)
 // Main function
 int main(int argc, char *argv[])
 {
+    // TODO: Replace ready queue with run queue
     int opt;
     bool showHelp = false, showStateTransition = false, showRunQueue = false, showEventQueue = false, showPreemptionDecision = false;
     const char *optstring = "hvteps:";
@@ -836,7 +922,7 @@ int main(int argc, char *argv[])
         cout << "Options:" << endl;
         cout << "  -h        show help message" << endl;
         cout << "  -v        show state transitions" << endl;
-        cout << "  -t        show run queue before and after insertion" << endl;
+        cout << "  -t        show run queue after insertion" << endl;
         cout << "  -e        show event queue before and after insertion" << endl;
         cout << "  -p        show preemption decision for PREPRIO" << endl;
         cout << "  -s        scheduler specification (FLS | R<num> | P<num>[:<maxprio>] | E<num>[:<maxprios>])\n";
