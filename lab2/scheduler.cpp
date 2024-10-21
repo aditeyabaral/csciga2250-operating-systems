@@ -855,34 +855,29 @@ void computeSchedulerTotalIoTime()
 void displayProcessInfo()
 {
     // Variables to store summary statistics
-    int simulationFinishTime = 0, totalTurnaroundTime = 0, totalWaitTime = 0;
+    int simulationFinishTime = 0, totalTurnaroundTime = 0, totalWaitTime = 0, totalProcesses = processes.size();
     // Print the process information
     cout << scheduler->name << endl;
-    for (int i = 0; i < processes.size(); i++)
+    for (int i = 0; i < totalProcesses; i++)
     {
         Process *process = processes[i];
-        printf("%04d: %4d %4d %4d %4d %1d | %5d %5d %5d %5d\n",
-               process->processNumber, process->arrivalTime, process->cpuTime, process->cpuBurst, process->ioBurst, process->staticPriority,
-               process->finishTime, process->turnaroundTime, process->ioTime, process->cpuWaitTime);
 
-        // TODO: Rewrite the above printf statement using cout
-        // cout << setw(4) << setfill('0') << process->processNumber << ": ";
-        // cout << setw(4) << setfill(' ') << process->arrivalTime << " ";
-        // cout << setw(4) << process->cpuTime << " ";
-        // cout << setw(4) << process->cpuBurst << " ";
-        // cout << setw(4) << process->ioBurst << " ";
-        // cout << setw(4) << process->staticPriority << " |";
-        // cout << setw(4) << process->finishTime << " ";
-        // cout << setw(4) << process->turnaroundTime << " ";
-        // cout << setw(4) << process->ioTime << " ";
-        // cout << setw(4) << process->cpuWaitTime << endl;
+        cout << setw(4) << setfill('0') << process->processNumber << ": "
+             << setw(4) << setfill(' ') << process->arrivalTime << " "
+             << setw(4) << process->cpuTime << " "
+             << setw(4) << process->cpuBurst << " "
+             << setw(4) << process->ioBurst << " "
+             << setw(1) << process->staticPriority << " | "
+             << setw(5) << process->finishTime << " "
+             << setw(5) << process->turnaroundTime << " "
+             << setw(5) << process->ioTime << " "
+             << setw(5) << process->cpuWaitTime << endl;
 
         // Update the simulation finish time if the current process finish time is greater
         simulationFinishTime = (process->finishTime > simulationFinishTime)
                                    ? process->finishTime
                                    : simulationFinishTime;
 
-        // TODO: Computer scheduler total CPU time in simulate function
         // Update the scheduler statistics from the current process
         scheduler->cpuTime += process->cpuTime;
         totalTurnaroundTime += process->turnaroundTime;
@@ -890,24 +885,19 @@ void displayProcessInfo()
     }
 
     // Calculate the summary statistics
-    // TODO: Compute processes.size() only once
     computeSchedulerTotalIoTime();
     double cpuUtilization = 100.0 * (scheduler->cpuTime / (double)simulationFinishTime);
     double ioUtilization = 100.0 * (scheduler->ioTime / (double)simulationFinishTime);
-    double throughput = 100.0 * (processes.size() / (double)simulationFinishTime);
-    double avgTurnaroundTime = totalTurnaroundTime / (double)processes.size();
-    double avgWaitTime = totalWaitTime / (double)processes.size();
+    double throughput = 100.0 * (totalProcesses / (double)simulationFinishTime);
+    double avgTurnaroundTime = totalTurnaroundTime / (double)totalProcesses;
+    double avgWaitTime = totalWaitTime / (double)totalProcesses;
 
-    printf("SUM: %d %.2lf %.2lf %.2lf %.2lf %.3lf\n", simulationFinishTime, cpuUtilization, ioUtilization, avgTurnaroundTime, avgWaitTime, throughput);
-
-    // TODO: Rewrite the above printf statement using cout
-    // cout << "SUM: "
-    //      << simulationFinishTime << " "
-    //      << fixed << setprecision(2) << cpuUtilization << " "
-    //      << fixed << setprecision(2) << ioUtilization << " "
-    //      << fixed << setprecision(2) << avgTurnaroundTime << " "
-    //      << fixed << setprecision(2) << avgWaitTime << " "
-    //      << fixed << setprecision(3) << throughput << endl;
+    cout << "SUM: " << simulationFinishTime << " "
+         << fixed << setprecision(2) << cpuUtilization << " "
+         << fixed << setprecision(2) << ioUtilization << " "
+         << fixed << setprecision(2) << avgTurnaroundTime << " "
+         << fixed << setprecision(2) << avgWaitTime << " "
+         << fixed << setprecision(3) << throughput << endl;
 }
 
 // A function to parse the scheduler specification and return the time quantum and the maximum number of priorities
@@ -955,7 +945,6 @@ void initScheduler(char *schedulerSpec)
 // Main function
 int main(int argc, char *argv[])
 {
-    // TODO: Replace ready queue with run queue
     int opt;
     bool showHelp = false, showStateTransition = false, showRunQueue = false, showEventQueue = false, showPreemptionDecision = false;
     const char *optstring = "hvteps:";
