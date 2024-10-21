@@ -343,86 +343,15 @@ public:
     }
 };
 
-class PreemptivePriority : public Scheduler
+class PreemptivePriority : public Priority
 {
-    // Initialise an active queue and an expired queue.
-    deque<Process *> *activeQueue;
-    deque<Process *> *expiredQueue;
 
 public:
     // Constructor to initialize the name of the scheduler, the quantum, and the maximum number of priorities
-    PreemptivePriority(int quantum, int maxprios)
+    // Since PreemptivePriority extends Priority, the constructor calls the constructor of the base class
+    PreemptivePriority(int quantum, int maxprios) : Priority(quantum, maxprios)
     {
         name = "PREPRIO " + to_string(quantum);
-        this->quantum = quantum;
-        this->maxprios = maxprios;
-        activeQueue = new deque<Process *>[maxprios];
-        expiredQueue = new deque<Process *>[maxprios];
-    }
-    // Add a process to the active queue based on the dynamic priority
-    void addProcess(Process *process)
-    {
-        if (process->dynamicPriority <= -1)
-        {
-            process->dynamicPriority = process->staticPriority - 1;
-            expiredQueue[process->dynamicPriority].push_back(process);
-        }
-        else
-            activeQueue[process->dynamicPriority].push_back(process);
-    }
-
-    // Get the next process from the active queue based on the dynamic priority
-    Process *getNextProcess()
-    {
-        Process *process = NULL;
-        for (int i = maxprios - 1; i >= 0; i--)
-        {
-            if (!activeQueue[i].empty())
-            {
-                process = activeQueue[i].front();
-                activeQueue[i].pop_front();
-                return process;
-            }
-        }
-        // If no process is found in the active queue, swap the active and expired queues
-        deque<Process *> *temp = activeQueue;
-        activeQueue = expiredQueue;
-        expiredQueue = temp;
-
-        // Find the next process in the active queue
-        for (int i = maxprios - 1; i >= 0; i--)
-        {
-            if (!activeQueue[i].empty())
-            {
-                process = activeQueue[i].front();
-                activeQueue[i].pop_front();
-                return process;
-            }
-        }
-        // Return NULL if no process is found
-        return process;
-    }
-
-    // Show the ready queue
-    void showReadyQueue()
-    {
-        int totalProcesses = 0;
-        for (int i = 0; i < maxprios; i++)
-            totalProcesses += activeQueue[i].size() + expiredQueue[i].size();
-        if (totalProcesses == 0)
-            cout << "SCHED (0): ";
-        else
-        {
-            cout << "SCHED (" << totalProcesses << "): ";
-            for (int i = maxprios - 1; i >= 0; i--)
-            {
-                for (int j = 0; j < activeQueue[i].size(); j++)
-                    cout << "(t=" << activeQueue[i][j]->stateTimeStamp << " pid=" << activeQueue[i][j]->processNumber << " prio=" << activeQueue[i][j]->dynamicPriority << " active) ";
-                for (int j = 0; j < expiredQueue[i].size(); j++)
-                    cout << "(t=" << expiredQueue[i][j]->stateTimeStamp << " pid=" << expiredQueue[i][j]->processNumber << " prio=" << expiredQueue[i][j]->dynamicPriority << ") expired) ";
-            }
-            cout << endl;
-        }
     }
 
     // Test if the current process should preempt the running process
