@@ -73,13 +73,6 @@ public:
     int cpuTime = 0;                               // The time spent by CPU
     virtual void addProcess(Process *process) = 0; // A function to add a process to the ready queue
     virtual Process *getNextProcess() = 0;         // A function to get the next process from the ready queue
-
-    void decrementDynamicPriority(Process *process) // A function to decrement the dynamic priority of the process
-    {
-        process->dynamicPriority--;
-        if (process->dynamicPriority == -1)
-            process->dynamicPriority = process->staticPriority - 1;
-    }
 };
 
 // Initialize the scheduler object.
@@ -101,7 +94,7 @@ public:
         readyQueue.push_back(process);
     }
 
-    // Get the next process from the ready queue. The first process added is returned first.
+    // Get the next process from the ready queue. The first process added is returned first
     Process *getNextProcess()
     {
         if (readyQueue.empty())
@@ -128,7 +121,7 @@ public:
         readyQueue.push_back(process);
     }
 
-    // Get the next process from the ready queue. The last process added is returned first.
+    // Get the next process from the ready queue. The last process added is returned first
     Process *getNextProcess()
     {
         if (readyQueue.empty())
@@ -155,7 +148,7 @@ public:
         readyQueue.push_back(process);
     }
 
-    // Get the next process from the ready queue. The process with the shortest remaining CPU time is returned first.
+    // Get the next process from the ready queue. The process with the shortest remaining CPU time is returned first
     Process *getNextProcess()
     {
         if (readyQueue.empty())
@@ -219,18 +212,13 @@ public:
     // Add a process to the active queue based on the dynamic priority
     void addProcess(Process *process)
     {
-        activeQueue[process->dynamicPriority].push_back(process);
-    }
-
-    // Override the decrementDynamicPriority function to add the process to the expired queue
-    void decrementDynamicPriority(Process *process)
-    {
-        if (process->dynamicPriority == -1)
+        if (process->dynamicPriority <= -1)
         {
             process->dynamicPriority = process->staticPriority - 1;
             expiredQueue[process->dynamicPriority].push_back(process);
         }
-        process->dynamicPriority--;
+        else
+            activeQueue[process->dynamicPriority].push_back(process);
     }
 
     // Get the next process from the active queue based on the dynamic priority
@@ -246,8 +234,7 @@ public:
                 return process;
             }
         }
-        // If no process is found in the active queue
-        // swap the active and expired queues
+        // If no process is found in the active queue, swap the active and expired queues
         deque<Process *> *temp = activeQueue;
         activeQueue = expiredQueue;
         expiredQueue = temp;
@@ -331,6 +318,7 @@ void displayEventQueue()
             {
                 cout << "(t=" << eventQueue[i]->timeStamp << " "
                      << "pid=" << eventQueue[i]->process->processNumber << " "
+                     << "prio=" << eventQueue[i]->process->dynamicPriority << " "
                      << stateToString(eventQueue[i]->oldState) << "->"
                      << stateToString(eventQueue[i]->newState) << ") | ";
             }
@@ -344,6 +332,7 @@ void addEvent(Event *event, bool showEventQueue = false)
     {
         cout << "AddEvent(t=" << event->timeStamp
              << " pid=" << event->process->processNumber
+             << " prio=" << event->process->dynamicPriority
              << " trans=" << stateToString(event->oldState) << "->" << stateToString(event->newState) << "): ";
         displayEventQueue();
         cout << " => ";
@@ -482,6 +471,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 scheduler->ioTimeStamps.push_back({process->stateTimeStamp, currentTime});
             }
 
+            // Set the state timestamp of the process as the current time
             process->stateTimeStamp = currentTime;
             // Add the process to the ready queue, no event is generated
             scheduler->addProcess(process);
@@ -495,6 +485,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
         case TO_PREEMPT: // Must come from RUNNING
             // Set the currentRunningProcess to NULL as the process is being preempted
             currentRunningProcess = nullptr;
+            // Set the state timestamp of the process as the current time
             process->stateTimeStamp = currentTime;
 
             // Print the verbose output if the verbose flag is set
@@ -504,11 +495,14 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 verbosePrint(currentTime, process->processNumber, timeInPreviousState, oldStateStr, newStateStr, message);
             }
 
-            scheduler->decrementDynamicPriority(process);
             callScheduler = true;
-            if (process->remainingCpuTime > 0)
+            if (process->remainingCpuTime > 0) // If the process has remaining CPU time
+            {
+                // Decrement the dynamic priority of the process
+                process->dynamicPriority--;
                 // Add the process to the ready queue, no event is generated
                 scheduler->addProcess(process);
+            }
             else // Process has no remaining CPU time, so it is done executing
             {
                 process->finishTime = currentTime;
@@ -562,6 +556,7 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 int timeToNextEvent = currentTime + currentCpuBurstForExecution;
                 int remainingExecutionTimeAfterCurrentCpuBurst = remainingExecutionTime - currentCpuBurstForExecution;
                 process->remainingCpuTime = remainingExecutionTimeAfterCurrentCpuBurst;
+                // Set the state timestamp of the process as the current time
                 process->stateTimeStamp = currentTime;
 
                 // Create an event for the process to transition to READY or BLOCKED
@@ -570,12 +565,14 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
                 event->process = process;
                 if (preempt)
                 {
+                    // Preempt the process and transition to READY
                     event->oldState = RUNNING;
                     event->newState = READY;
                     event->transition = TO_PREEMPT;
                 }
                 else
                 {
+                    // Finish the CPU burst and transition to BLOCKED
                     event->oldState = RUNNING;
                     event->newState = BLOCKED;
                     event->transition = TO_BLOCKED;
@@ -585,16 +582,18 @@ void simulate(bool verbose, bool traceEventExecution, bool showEventQueue, bool 
             break;
         }
 
-        case TO_BLOCKED:
+        case TO_BLOCKED: // Must come from RUNNING
+            // Set the currentRunningProcess to NULL as the process is transitioning to the blocked state
             currentRunningProcess = nullptr;
             callScheduler = true;
-            // create an event for when process becomes READY again
+
+            // Create an event for when process becomes READY again
             if (process->remainingCpuTime > 0) // Execute only if the process has remaining CPU time
             {
-                scheduler->decrementDynamicPriority(process);
                 // Calculate the I/O burst and the time to the next event
                 int ioBurst = process->ioBurst;
                 int currentIoBurst = randomNumberGenerator(ioBurst);
+                // Calculate the time to the next event and set the state timestamp of the process as the current time
                 int timeToNextEvent = currentTime + currentIoBurst;
                 process->stateTimeStamp = currentTime;
 
