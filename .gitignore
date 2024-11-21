@@ -4,5 +4,6 @@ outdir/
 *.out
 linker
 scheduler
+mmu
 out
 output
