@@ -32,6 +32,7 @@ public:
     uint32_t REFERENCED : 1;    // The referenced bit
     uint32_t PAGEDOUT : 1;      // The paged-out bit
     uint32_t WRITE_PROTECT : 1; // The write-protected bit
+    uint32_t FILE_MAPPED : 1;   // The file-mapped bit
 };
 
 // A Process class to store the process information
@@ -42,10 +43,30 @@ public:
     int vma;               // The number of virtual memory areas. TODO: Rename this to vmaCount
     vector<VMA> vmas;      // The virtual memory areas
     vector<PTE> pageTable; // The page table for the process
+    int unmaps;            // The number of unmaps
+    int maps;              // The number of maps
+    int ins;               // The number of ins
+    int outs;              // The number of outs
+    int fins;              // The number of fins
+    int fouts;             // The number of fouts
+    int zeros;             // The number of zeros
+    int segv;              // The number of segv
+    int segprot;           // The number of segprot
+
+    // A function to check if the page is in the virtual memory area of the process
+    bool checkPageInVMA(int vpage)
+    {
+        for (VMA vma : vmas)
+        {
+            if (vpage >= vma.startPage && vpage <= vma.endPage)
+                return true;
+        }
+        return false;
+    }
 };
 
-// A Frame Table Entry (FTE) class to store the frame table entry information
-class FTE
+// A Frame class to store the frame table entry information
+class Frame
 {
 public:
     uint32_t frameNumber;   // The frame number
@@ -57,35 +78,8 @@ public:
 class Instruction
 {
 public:
-    int id;         // The instruction number
     char operation; // The operation (c/r/w/e)
     int num;        // The number associated with the operation. Can be procid or vpage
-};
-
-// A Pager base class to implement the page replacement algorithms
-class Pager
-{
-public:
-    virtual FTE *selectVictimFrame() = 0; // Select the victim frame to replace
-    FTE *allocateFrameFromFreeList()
-    {
-        for (FTE &frame : frameTable)
-        {
-            if (frame.processNumber == -1)
-            {
-                return &frame;
-            }
-        }
-        return nullptr;
-    }
-
-    FTE *getFrame()
-    {
-        FTE *frame = allocateFrameFromFreeList();
-        if (frame == nullptr)
-            frame = selectVictimFrame();
-        return frame;
-    }
 };
 
 // Variables to store the maximum number of virtual pages and frames
@@ -93,10 +87,36 @@ const int MAX_VPAGES = 64;
 int MAX_FRAMES;
 
 // A global vector to represent the frame table
-vector<FTE> frameTable;
+vector<Frame> frameTable;
 
 // A global vector to represent the processes
 vector<Process *> processes;
+
+// A Pager base class to implement the page replacement algorithms
+class Pager
+{
+public:
+    virtual Frame *selectVictimFrame() = 0; // Select the victim frame to replace
+    // A function to allocate a frame from the free list
+    Frame *allocateFrameFromFreeList()
+    {
+        for (Frame &frame : frameTable)
+        {
+            if (frame.processNumber == -1)
+                return &frame;
+        }
+        return nullptr;
+    }
+
+    // A function to get a frame using the page replacement algorithm
+    Frame *getFrame()
+    {
+        Frame *frame = allocateFrameFromFreeList();
+        if (frame == nullptr)
+            frame = selectVictimFrame();
+        return frame;
+    }
+};
 
 // The FIFO Pager class to implement the FIFO page replacement algorithm
 class FIFO : public Pager
@@ -104,13 +124,41 @@ class FIFO : public Pager
     int index = 0;
 
 public:
-    FTE *selectVictimFrame()
+    // Select the victim frame to replace
+    Frame *selectVictimFrame()
     {
-        FTE *frame = &frameTable[index];
+        // Select the frame at the current index
+        Frame *frame = &frameTable[index];
+        // Move to the next frame
         index = (index + 1) % MAX_FRAMES;
         return frame;
     }
 };
+
+// A Clock Pager class to implement the CLOCK page replacement algorithm
+class Clock : public Pager
+{
+    int index = 0;
+
+public:
+    Frame *selectVictimFrame()
+    {
+        // Start from the current index
+        int inspectedFrames = 0;
+        Frame *frame = &frameTable[index];
+        while (processes[frame->processNumber]->pageTable[frame->pageNumber].REFERENCED)
+        {
+            // Reset the referenced bit if it is set
+            processes[frame->processNumber]->pageTable[frame->pageNumber].REFERENCED = 0;
+            // Move to the next frame
+            index = (index + 1) % MAX_FRAMES;
+        }
+        return frame;
+    }
+};
+
+// A global pager object to represent the paging algorithm
+Pager *pager;
 
 // A function to read the input file and populate the processes and instructions
 void readInput(FILE *inputFile)
@@ -135,9 +183,24 @@ void readInput(FILE *inputFile)
         // Create a new process
         Process *process = new Process();
         process->processNumber = i;
+
         // Read the number of virtual memory areas
         process->vma = atoi(line);
+        // Initialize the page table for the process
+        process->pageTable = vector<PTE>(MAX_VPAGES);
 
+        // Initialize the process statistics
+        process->unmaps = 0;
+        process->maps = 0;
+        process->ins = 0;
+        process->outs = 0;
+        process->fins = 0;
+        process->fouts = 0;
+        process->zeros = 0;
+        process->segv = 0;
+        process->segprot = 0;
+
+        // Read each virtual memory area information
         for (int j = 0; j < process->vma; j++)
         {
             // Create a new virtual memory area
@@ -152,9 +215,8 @@ void readInput(FILE *inputFile)
             process->vmas.push_back(vma);
         }
 
-        // Create the page table for the process. TODO: Use constant for 64
-        process->pageTable = vector<PTE>(MAX_VPAGES);
-        for (int j = 0; j < process->pageTable.size(); j++)
+        // Initialize the page table for the process
+        for (int j = 0; j < MAX_VPAGES; j++)
         {
             PTE pte = PTE();
             pte.PRESENT = 0;
@@ -162,6 +224,7 @@ void readInput(FILE *inputFile)
             pte.REFERENCED = 0;
             pte.PAGEDOUT = 0;
             pte.WRITE_PROTECT = 0;
+            pte.FILE_MAPPED = 0;
             process->pageTable[j] = pte;
         }
 
@@ -201,17 +264,7 @@ void readRandomFile(FILE *randomFile)
     }
 }
 
-// A function to display the process information
-void displayProcessInfo()
-{
-    for (Process *process : processes)
-    {
-        cout << "Process " << process->processNumber << ": " << process->vma << " VMA" << endl;
-        for (VMA vma : process->vmas)
-            cout << "  VMA " << vma.startPage << " " << vma.endPage << " " << vma.writeProtected << " " << vma.fileMapped << endl;
-    }
-}
-
+// A function to get the next instruction from the input file
 bool getNextInstruction(FILE *inputFile, Instruction *instruction)
 {
     static char line[1024];
@@ -235,17 +288,6 @@ bool getNextInstruction(FILE *inputFile, Instruction *instruction)
     }
 }
 
-// A function to check if the page is in the virtual memory area of a process
-bool checkPageInVMA(Process *process, int vpage)
-{
-    for (VMA vma : process->vmas)
-    {
-        if (vpage >= vma.startPage && vpage <= vma.endPage)
-            return true;
-    }
-    return false;
-}
-
 // A function to simulate the virtual memory management
 void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool displayFrameTable, bool displayProcessStats, bool displayCurrentPageTable, bool displayAllPageTables, bool displayFrameTableAfterInstruction, bool displayAging)
 {
@@ -259,6 +301,7 @@ void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool d
     unsigned long long instructionCount = 0;
     unsigned long long ctxSwitches = 0;
     unsigned long long processExits = 0;
+    unsigned long long cost = 0;
     while (getNextInstruction(inputFile, instruction))
     {
         cout << instructionCount << ": ==> " << instruction->operation << " " << instruction->num << endl;
@@ -268,13 +311,34 @@ void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool d
             // Context switch to new process
             currentProcess = processes[instruction->num];
             ctxSwitches++;
+            cost += 130;
             break;
         case 'e':
             // Process exits
-            // TODO: Implement the exit operation
+            for (int i = 0; i < MAX_VPAGES; i++)
+            {
+                currentPTE = &currentProcess->pageTable[i];
+                if (currentPTE->PRESENT)
+                {
+                    cout << " UNMAP " << currentProcess->processNumber << ":" << i << endl;
+                    if (currentPTE->MODIFIED)
+                        cout << " OUT" << endl;
+                    currentPTE->PRESENT = 0;
+                    currentPTE->MODIFIED = 0;
+                    currentPTE->REFERENCED = 0;
+                    currentPTE->PAGEDOUT = 0;
+                    currentPTE->WRITE_PROTECT = 0;
+                    currentPTE->FILE_MAPPED = 0;
+                }
+                Frame *frame = &frameTable[currentPTE->FRAME];
+                frame->processNumber = -1;
+                frame->pageNumber = -1;
+                currentPTE->PRESENT = 0;
+            }
             processExits++;
+            cost += 1230;
             break;
-        default:
+        default: // handle read and write operations
             vpage = instruction->num;
             // Fetch the page table entry for the virtual page
             currentPTE = &currentProcess->pageTable[vpage];
@@ -282,19 +346,91 @@ void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool d
             if (!currentPTE->PRESENT) // Page fault
             {
                 // Check if the page is in the virtual memory area of the process
-                bool isPageInVMA = checkPageInVMA(currentProcess, vpage);
-                if (!isPageInVMA)
+                if (!currentProcess->checkPageInVMA(vpage))
+                // Not a valid page, move to the next instruction
                 {
                     cout << " SEGV" << endl;
+                    break;
                 }
-                else
+
+                Frame *newFrame = pager->getFrame();
+                // Handle unmapping
+                if (newFrame->processNumber != -1)
                 {
-                    ;
+                    Process *victimProcess = processes[newFrame->processNumber];
+                    PTE *victimPTE = &victimProcess->pageTable[newFrame->pageNumber];
+                    cout << " UNMAP " << newFrame->processNumber << ":" << newFrame->pageNumber << endl;
+
+                    if (victimPTE->MODIFIED)
+                    {
+                        if (victimPTE->FILE_MAPPED)
+                        {
+                            cout << " FOUT" << endl;
+                            victimProcess->fouts++;
+                        }
+                        else
+                        {
+                            cout << " OUT" << endl;
+                            victimProcess->outs++;
+                        }
+                    }
+                    victimPTE->PRESENT = 0;
                 }
+                if (!currentPTE->PAGEDOUT && !currentPTE->FILE_MAPPED)
+                    cout << " ZERO" << endl;
+                else if (currentPTE->PAGEDOUT)
+                    cout << " IN" << endl;
+                else if (currentPTE->FILE_MAPPED)
+                    cout << " IN" << endl;
+                cout << " MAP " << newFrame->frameNumber << endl;
+                // Update the frame table entry
+                newFrame->processNumber = currentProcess->processNumber;
+                newFrame->pageNumber = vpage;
+                // Update the page table entry
+                currentPTE->FRAME = newFrame->frameNumber;
+                currentPTE->PRESENT = 1;
+
+                // Update the read and write bits
+                currentPTE->REFERENCED = 1;
+                if (instruction->operation == 'w')
+                {
+                    if (currentPTE->WRITE_PROTECT)
+                        cout << " SEGPROT" << endl;
+                    else
+                        currentPTE->MODIFIED = 1;
+                }
+                cost += 1;
                 break;
             }
-            instructionCount++;
         }
+        instructionCount++;
+    }
+
+    if (displayProcessStats)
+    {
+        for (Process *process : processes)
+        {
+            cout << "PROC[" << process->processNumber << "]: U=" << process->unmaps
+                 << " M=" << process->maps << " I=" << process->ins
+                 << " O=" << process->outs << " FI=" << process->fins
+                 << " FO=" << process->fouts << " Z=" << process->zeros
+                 << " SV=" << process->segv << " SP=" << process->segprot << endl;
+        }
+    }
+    cout << "TOTALCOST " << instructionCount << " " << ctxSwitches << " " << processExits << " " << cost << " " << sizeof(PTE) << endl;
+}
+
+// A function to initialize the pager based on the algorithm
+void initPager(char algo)
+{
+    switch (algo)
+    {
+    case 'f':
+        pager = new FIFO(); // FIFO
+        break;
+    case 'c':
+        pager = new Clock(); // CLOCK
+        break;
     }
 }
 
@@ -323,10 +459,20 @@ int main(int argc, char *argv[])
         {
         case 'f': // The number of frames
             MAX_FRAMES = atoi(optarg);
+            frameTable = vector<Frame>(MAX_FRAMES);
+            // Initialize the frame table. TODO: Move this to a function
+            for (int i = 0; i < MAX_FRAMES; i++)
+            {
+                Frame frame = Frame();
+                frame.frameNumber = i;
+                frame.processNumber = -1;
+                frame.pageNumber = -1;
+                frameTable[i] = frame;
+            }
             break;
         case 'a': // The algorithm
             algo = *optarg;
-            // TODO: Directly initialize the algorithm
+            initPager(algo);
             break;
         case 'o': // The options
             for (int i = 0; i < strlen(optarg); i++)
