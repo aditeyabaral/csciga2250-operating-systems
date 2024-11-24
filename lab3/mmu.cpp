@@ -312,7 +312,7 @@ bool getNextInstruction(FILE *inputFile, Instruction *instruction)
 }
 
 // A function to display the process statistics
-void displayProcessStatistics(unsigned long long instructionCount, unsigned long long ctxSwitches, unsigned long long processExits, unsigned long long cost)
+void displayProcessStatistics(unsigned long instructionCount, unsigned long ctxSwitches, unsigned long processExits, unsigned long long cost)
 {
     for (Process *process : processes)
     {
@@ -378,9 +378,9 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
 
     // Initialize the instruction count, context switches and process exits
     int vpage;
-    unsigned long long instructionCount = 0;
-    unsigned long long ctxSwitches = 0;
-    unsigned long long processExits = 0;
+    unsigned long instructionCount = 0;
+    unsigned long ctxSwitches = 0;
+    unsigned long processExits = 0;
     unsigned long long cost = 0;
     while (getNextInstruction(inputFile, instruction))
     {
