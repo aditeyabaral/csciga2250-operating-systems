@@ -6,7 +6,6 @@
 #include <cstring>
 #include <cctype>
 #include <cstdlib>
-#include <queue>
 #include <deque>
 #include <algorithm>
 
@@ -63,6 +62,17 @@ public:
         }
         return false;
     }
+
+    // A function to get the VMA for the page
+    VMA *getVMAForPage(int vpage)
+    {
+        for (VMA &vma : vmas)
+        {
+            if (vpage >= vma.startPage && vpage <= vma.endPage)
+                return &vma;
+        }
+        return nullptr;
+    }
 };
 
 // A Frame class to store the frame table entry information
@@ -89,6 +99,9 @@ int MAX_FRAMES;
 // A global vector to represent the frame table
 vector<Frame> frameTable;
 
+// A global deque to represent the free frames
+deque<Frame *> freeFrames = deque<Frame *>();
+
 // A global vector to represent the processes
 vector<Process *> processes;
 
@@ -100,19 +113,29 @@ public:
     // A function to allocate a frame from the free list
     Frame *allocateFrameFromFreeList()
     {
-        for (Frame &frame : frameTable)
+        if (!freeFrames.empty())
         {
-            if (frame.processNumber == -1)
-                return &frame;
+            Frame *frame = freeFrames.front();
+            freeFrames.pop_front();
+            return frame;
         }
-        return nullptr;
+        else
+            return nullptr;
+    }
+
+    // A function to add a frame to the free list
+    void addFrameToFreeList(Frame *frame)
+    {
+        freeFrames.push_back(frame);
     }
 
     // A function to get a frame using the page replacement algorithm
     Frame *getFrame()
     {
+        // Try to allocate a frame from the free list
         Frame *frame = allocateFrameFromFreeList();
         if (frame == nullptr)
+            // If the free list is empty, select a victim frame using the page replacement algorithm
             frame = selectVictimFrame();
         return frame;
     }
@@ -302,6 +325,7 @@ void displayProcessStatistics(unsigned long long instructionCount, unsigned long
     cout << "TOTALCOST " << instructionCount << " " << ctxSwitches << " " << processExits << " " << cost << " " << sizeof(PTE) << endl;
 }
 
+// A function to display the frame table
 void displayFrameTable()
 {
     cout << "FT:";
@@ -319,11 +343,12 @@ void displayFrameTable()
     cout << endl;
 }
 
+// A function to display the page table
 void displayPageTable()
 {
     for (Process *process : processes)
     {
-        cout << "PT[" << process->processNumber << "]:";
+        cout << "PT[" << process->processNumber << "]: ";
         for (int i = 0; i < MAX_VPAGES; i++)
         {
             PTE pte = process->pageTable[i];
@@ -367,6 +392,7 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
         case 'c': // Context switch to new process
             currentProcess = processes[instruction->num];
             ctxSwitches++;
+            // Add the cost for context switches
             cost += 130;
             break;
         case 'e': // Process exit
@@ -392,14 +418,16 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
                     currentPTE->FILE_MAPPED = 0;
                 }
                 Frame *frame = &frameTable[currentPTE->FRAME];
-                frame->processNumber = -1;
-                frame->pageNumber = -1;
+                pager->addFrameToFreeList(frame);
                 currentPTE->PRESENT = 0;
             }
             processExits++;
+            // Add the cost for process exits
             cost += 1230;
             break;
-        default: // handle read and write operations
+        default: // Handle read and write operations
+            // Add the cost for r/w operations
+            cost += 1;
             vpage = instruction->num;
             // Fetch the page table entry for the virtual page
             currentPTE = &currentProcess->pageTable[vpage];
@@ -408,77 +436,124 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
             {
                 // Check if the page is in the virtual memory area of the process
                 if (!currentProcess->checkPageInVMA(vpage))
-                // Not a valid page, move to the next instruction
                 {
+                    // Not a valid page, move to the next instruction
+                    currentProcess->segv++;
+                    // Add the cost for segv
+                    cost += 440;
                     if (displayInstructionOutputFlag)
                         cout << " SEGV" << endl;
-                    currentProcess->segv++;
                     break;
                 }
 
+                // Set the file-mapped and write-protected bits for the page table entry
+                VMA *vma = currentProcess->getVMAForPage(vpage);
+                currentPTE->FILE_MAPPED = vma->fileMapped;
+                currentPTE->WRITE_PROTECT = vma->writeProtected;
+
+                // Fetch a new frame for the page
                 Frame *newFrame = pager->getFrame();
-                // Handle unmapping
+                // Check if the frame is mapped to a page table entry
                 if (newFrame->processNumber != -1)
                 {
+                    // Identify the process and page table entry for the frame
                     Process *victimProcess = processes[newFrame->processNumber];
                     PTE *victimPTE = &victimProcess->pageTable[newFrame->pageNumber];
+                    victimProcess->unmaps++;
+                    // Add the cost for unmaps
+                    cost += 410;
+
+                    // Display the frame table unmapping
                     if (displayInstructionOutputFlag)
                         cout << " UNMAP " << newFrame->processNumber << ":" << newFrame->pageNumber << endl;
 
+                    // Check if the page is modified and file mapped
                     if (victimPTE->MODIFIED)
                     {
-                        if (victimPTE->FILE_MAPPED)
-                        {
-                            if (displayInstructionOutputFlag)
-                                cout << " FOUT" << endl;
-                            victimProcess->fouts++;
-                        }
-                        else
-                        {
-                            if (displayInstructionOutputFlag)
-                                cout << " OUT" << endl;
-                            victimProcess->outs++;
-                        }
+                        // Page out to swap space
+                        victimProcess->outs++;
+                        // Add the cost for swapping out
+                        cost += 2750;
+                        if (displayInstructionOutputFlag)
+                            cout << " OUT" << endl;
+                        victimPTE->PAGEDOUT = 1;
                     }
+                    else if (victimPTE->FILE_MAPPED)
+                    {
+                        // Page out to file
+                        victimProcess->fouts++;
+                        // Add the cost for fouts
+                        cost += 2800;
+                        if (displayInstructionOutputFlag)
+                            cout << " FOUT" << endl;
+                    }
+
+                    // Reset the page table entry
                     victimPTE->PRESENT = 0;
+                    victimPTE->MODIFIED = 0;
+                    victimPTE->REFERENCED = 0;
+                    victimPTE->WRITE_PROTECT = 0;
+                    // victimPTE->FILE_MAPPED = 0;
                 }
-                if (!currentPTE->PAGEDOUT && !currentPTE->FILE_MAPPED)
-                {
-                    if (displayInstructionOutputFlag)
-                        cout << " ZERO" << endl;
-                }
-                else if (currentPTE->PAGEDOUT)
-                {
-                    if (displayInstructionOutputFlag)
-                        cout << " IN" << endl;
-                }
-                else if (currentPTE->FILE_MAPPED)
-                {
-                    if (displayInstructionOutputFlag)
-                        cout << " FIN" << endl;
-                }
-                if (displayInstructionOutputFlag)
-                    cout << " MAP " << newFrame->frameNumber << endl;
-                // Update the frame table entry
+
+                // Map new frame to current page table entry
                 newFrame->processNumber = currentProcess->processNumber;
                 newFrame->pageNumber = vpage;
-                // Update the page table entry
+
+                // Map the page table entry to the new frame
                 currentPTE->FRAME = newFrame->frameNumber;
                 currentPTE->PRESENT = 1;
 
-                // Update the read and write bits
+                // Check if the the page was never swapped out or file mapped
+                if (!currentPTE->PAGEDOUT && !currentPTE->FILE_MAPPED)
+                {
+                    currentProcess->zeros++;
+                    // Add the cost for zeroing
+                    cost += 150;
+                    if (displayInstructionOutputFlag)
+                        cout << " ZERO" << endl;
+                }
+                // Check if the page was swapped out
+                else if (currentPTE->PAGEDOUT)
+                {
+                    currentProcess->ins++;
+                    // Add the cost for swapping in
+                    cost += 3200;
+                    if (displayInstructionOutputFlag)
+                        cout << " IN" << endl;
+                }
+                // Check if the page was file mapped
+                else if (currentPTE->FILE_MAPPED)
+                {
+                    currentProcess->fins++;
+                    // Add the cost for fin
+                    cost += 2350;
+                    if (displayInstructionOutputFlag)
+                        cout << " FIN" << endl;
+                }
+
+                // Display the frame table mapping
+                currentProcess->maps++;
+                // Add the cost for mapping
+                cost += 350;
+                if (displayInstructionOutputFlag)
+                    cout << " MAP " << newFrame->frameNumber << endl;
+
+                // Update the reference and modified bits
                 currentPTE->REFERENCED = 1;
                 if (instruction->operation == 'w')
                 {
                     if (currentPTE->WRITE_PROTECT)
                     {
+                        currentProcess->segprot++;
+                        // Add the cost for segprot
+                        cost += 410;
                         if (displayInstructionOutputFlag)
                             cout << " SEGPROT" << endl;
                     }
                     else
                         currentPTE->MODIFIED = 1;
                 }
-                cost += 1;
                 break;
             }
         }
