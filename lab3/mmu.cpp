@@ -332,13 +332,9 @@ void displayFrameTable()
     for (Frame &frame : frameTable)
     {
         if (frame.processNumber == -1)
-        {
             cout << " *";
-        }
         else
-        {
             cout << " " << frame.processNumber << ":" << frame.pageNumber;
-        }
     }
     cout << endl;
 }
@@ -348,21 +344,17 @@ void displayPageTable()
 {
     for (Process *process : processes)
     {
-        cout << "PT[" << process->processNumber << "]: ";
+        cout << "PT[" << process->processNumber << "]:";
         for (int i = 0; i < MAX_VPAGES; i++)
         {
             PTE pte = process->pageTable[i];
             if (pte.PRESENT)
-            {
-                cout << i << ":"
+                cout << " " << i << ":"
                      << (pte.REFERENCED ? "R" : "-")
                      << (pte.MODIFIED ? "M" : "-")
-                     << (pte.PAGEDOUT ? "S" : "-") << " ";
-            }
+                     << (pte.PAGEDOUT ? "S" : "-");
             else
-            {
-                cout << (pte.PAGEDOUT ? "#" : "*") << " ";
-            }
+                cout << " " << (pte.PAGEDOUT ? "#" : "*");
         }
         cout << endl;
     }
@@ -470,22 +462,25 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
                     // Check if the page is modified and file mapped
                     if (victimPTE->MODIFIED)
                     {
-                        // Page out to swap space
-                        victimProcess->outs++;
-                        // Add the cost for swapping out
-                        cost += 2750;
-                        if (displayInstructionOutputFlag)
-                            cout << " OUT" << endl;
-                        victimPTE->PAGEDOUT = 1;
-                    }
-                    else if (victimPTE->FILE_MAPPED)
-                    {
-                        // Page out to file
-                        victimProcess->fouts++;
-                        // Add the cost for fouts
-                        cost += 2800;
-                        if (displayInstructionOutputFlag)
-                            cout << " FOUT" << endl;
+                        if (victimPTE->FILE_MAPPED)
+                        {
+                            // Page out to file
+                            victimProcess->fouts++;
+                            // Add the cost for fouts
+                            cost += 2800;
+                            if (displayInstructionOutputFlag)
+                                cout << " FOUT" << endl;
+                        }
+                        else
+                        {
+                            // Page out to swap space
+                            victimProcess->outs++;
+                            // Add the cost for swapping out
+                            cost += 2750;
+                            if (displayInstructionOutputFlag)
+                                cout << " OUT" << endl;
+                            victimPTE->PAGEDOUT = 1;
+                        }
                     }
 
                     // Reset the page table entry
@@ -493,7 +488,7 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
                     victimPTE->MODIFIED = 0;
                     victimPTE->REFERENCED = 0;
                     victimPTE->WRITE_PROTECT = 0;
-                    // victimPTE->FILE_MAPPED = 0;
+                    victimPTE->FILE_MAPPED = 0;
                 }
 
                 // Map new frame to current page table entry
@@ -538,25 +533,29 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
                 cost += 350;
                 if (displayInstructionOutputFlag)
                     cout << " MAP " << newFrame->frameNumber << endl;
-
-                // Update the reference and modified bits
-                currentPTE->REFERENCED = 1;
-                if (instruction->operation == 'w')
-                {
-                    if (currentPTE->WRITE_PROTECT)
-                    {
-                        currentProcess->segprot++;
-                        // Add the cost for segprot
-                        cost += 410;
-                        if (displayInstructionOutputFlag)
-                            cout << " SEGPROT" << endl;
-                    }
-                    else
-                        currentPTE->MODIFIED = 1;
-                }
-                break;
             }
+
+            // Update the reference bit
+            currentPTE->REFERENCED = 1;
+            // Check if the operation is write
+            if (instruction->operation == 'w')
+            {
+                if (currentPTE->WRITE_PROTECT)
+                {
+                    // If the page is write-protected, increment the segprot count
+                    currentProcess->segprot++;
+                    // Add the cost for segprot
+                    cost += 410;
+                    if (displayInstructionOutputFlag)
+                        cout << " SEGPROT" << endl;
+                }
+                else
+                    // Set the modified bit
+                    currentPTE->MODIFIED = 1;
+            }
+            break;
         }
+        // Increment the instruction count
         instructionCount++;
     }
 
