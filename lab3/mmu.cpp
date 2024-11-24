@@ -288,8 +288,63 @@ bool getNextInstruction(FILE *inputFile, Instruction *instruction)
     }
 }
 
+// A function to display the process statistics
+void displayProcessStatistics(unsigned long long instructionCount, unsigned long long ctxSwitches, unsigned long long processExits, unsigned long long cost)
+{
+    for (Process *process : processes)
+    {
+        cout << "PROC[" << process->processNumber << "]: U=" << process->unmaps
+             << " M=" << process->maps << " I=" << process->ins
+             << " O=" << process->outs << " FI=" << process->fins
+             << " FO=" << process->fouts << " Z=" << process->zeros
+             << " SV=" << process->segv << " SP=" << process->segprot << endl;
+    }
+    cout << "TOTALCOST " << instructionCount << " " << ctxSwitches << " " << processExits << " " << cost << " " << sizeof(PTE) << endl;
+}
+
+void displayFrameTable()
+{
+    cout << "FT:";
+    for (Frame &frame : frameTable)
+    {
+        if (frame.processNumber == -1)
+        {
+            cout << " *";
+        }
+        else
+        {
+            cout << " " << frame.processNumber << ":" << frame.pageNumber;
+        }
+    }
+    cout << endl;
+}
+
+void displayPageTable()
+{
+    for (Process *process : processes)
+    {
+        cout << "PT[" << process->processNumber << "]:";
+        for (int i = 0; i < MAX_VPAGES; i++)
+        {
+            PTE pte = process->pageTable[i];
+            if (pte.PRESENT)
+            {
+                cout << i << ":"
+                     << (pte.REFERENCED ? "R" : "-")
+                     << (pte.MODIFIED ? "M" : "-")
+                     << (pte.PAGEDOUT ? "S" : "-") << " ";
+            }
+            else
+            {
+                cout << (pte.PAGEDOUT ? "#" : "*") << " ";
+            }
+        }
+        cout << endl;
+    }
+}
+
 // A function to simulate the virtual memory management
-void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool displayFrameTable, bool displayProcessStats, bool displayCurrentPageTable, bool displayAllPageTables, bool displayFrameTableAfterInstruction, bool displayAging)
+void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPageTableFlag, bool displayFrameTableFlag, bool displayProcessStatisticsFlag, bool displayCurrentPageTableFlag, bool displayAllPageTablesFlag, bool displayFrameTableAfterInstructionFlag, bool displayAgingFlag)
 {
     // Initialize the the current instruction, process and page table entry
     Instruction *instruction = new Instruction();
@@ -304,25 +359,31 @@ void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool d
     unsigned long long cost = 0;
     while (getNextInstruction(inputFile, instruction))
     {
-        cout << instructionCount << ": ==> " << instruction->operation << " " << instruction->num << endl;
+        if (displayInstructionOutputFlag)
+            cout << instructionCount << ": ==> " << instruction->operation << " " << instruction->num << endl;
+
         switch (instruction->operation)
         {
-        case 'c':
-            // Context switch to new process
+        case 'c': // Context switch to new process
             currentProcess = processes[instruction->num];
             ctxSwitches++;
             cost += 130;
             break;
-        case 'e':
-            // Process exits
+        case 'e': // Process exit
             for (int i = 0; i < MAX_VPAGES; i++)
             {
                 currentPTE = &currentProcess->pageTable[i];
                 if (currentPTE->PRESENT)
                 {
-                    cout << " UNMAP " << currentProcess->processNumber << ":" << i << endl;
-                    if (currentPTE->MODIFIED)
-                        cout << " OUT" << endl;
+                    if (displayInstructionOutputFlag)
+                        cout << " UNMAP " << currentProcess->processNumber << ":" << i << endl;
+                    currentProcess->unmaps++;
+                    if (currentPTE->MODIFIED && currentPTE->FILE_MAPPED)
+                    {
+                        if (displayInstructionOutputFlag)
+                            cout << " FOUT" << endl;
+                        currentProcess->fouts++;
+                    }
                     currentPTE->PRESENT = 0;
                     currentPTE->MODIFIED = 0;
                     currentPTE->REFERENCED = 0;
@@ -349,7 +410,9 @@ void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool d
                 if (!currentProcess->checkPageInVMA(vpage))
                 // Not a valid page, move to the next instruction
                 {
-                    cout << " SEGV" << endl;
+                    if (displayInstructionOutputFlag)
+                        cout << " SEGV" << endl;
+                    currentProcess->segv++;
                     break;
                 }
 
@@ -359,30 +422,43 @@ void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool d
                 {
                     Process *victimProcess = processes[newFrame->processNumber];
                     PTE *victimPTE = &victimProcess->pageTable[newFrame->pageNumber];
-                    cout << " UNMAP " << newFrame->processNumber << ":" << newFrame->pageNumber << endl;
+                    if (displayInstructionOutputFlag)
+                        cout << " UNMAP " << newFrame->processNumber << ":" << newFrame->pageNumber << endl;
 
                     if (victimPTE->MODIFIED)
                     {
                         if (victimPTE->FILE_MAPPED)
                         {
-                            cout << " FOUT" << endl;
+                            if (displayInstructionOutputFlag)
+                                cout << " FOUT" << endl;
                             victimProcess->fouts++;
                         }
                         else
                         {
-                            cout << " OUT" << endl;
+                            if (displayInstructionOutputFlag)
+                                cout << " OUT" << endl;
                             victimProcess->outs++;
                         }
                     }
                     victimPTE->PRESENT = 0;
                 }
                 if (!currentPTE->PAGEDOUT && !currentPTE->FILE_MAPPED)
-                    cout << " ZERO" << endl;
+                {
+                    if (displayInstructionOutputFlag)
+                        cout << " ZERO" << endl;
+                }
                 else if (currentPTE->PAGEDOUT)
-                    cout << " IN" << endl;
+                {
+                    if (displayInstructionOutputFlag)
+                        cout << " IN" << endl;
+                }
                 else if (currentPTE->FILE_MAPPED)
-                    cout << " IN" << endl;
-                cout << " MAP " << newFrame->frameNumber << endl;
+                {
+                    if (displayInstructionOutputFlag)
+                        cout << " FIN" << endl;
+                }
+                if (displayInstructionOutputFlag)
+                    cout << " MAP " << newFrame->frameNumber << endl;
                 // Update the frame table entry
                 newFrame->processNumber = currentProcess->processNumber;
                 newFrame->pageNumber = vpage;
@@ -395,7 +471,10 @@ void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool d
                 if (instruction->operation == 'w')
                 {
                     if (currentPTE->WRITE_PROTECT)
-                        cout << " SEGPROT" << endl;
+                    {
+                        if (displayInstructionOutputFlag)
+                            cout << " SEGPROT" << endl;
+                    }
                     else
                         currentPTE->MODIFIED = 1;
                 }
@@ -406,18 +485,17 @@ void simulate(FILE *inputFile, bool displayOutput, bool displayPageTable, bool d
         instructionCount++;
     }
 
-    if (displayProcessStats)
-    {
-        for (Process *process : processes)
-        {
-            cout << "PROC[" << process->processNumber << "]: U=" << process->unmaps
-                 << " M=" << process->maps << " I=" << process->ins
-                 << " O=" << process->outs << " FI=" << process->fins
-                 << " FO=" << process->fouts << " Z=" << process->zeros
-                 << " SV=" << process->segv << " SP=" << process->segprot << endl;
-        }
-    }
-    cout << "TOTALCOST " << instructionCount << " " << ctxSwitches << " " << processExits << " " << cost << " " << sizeof(PTE) << endl;
+    // Display the Page Table
+    if (displayPageTableFlag)
+        displayPageTable();
+
+    // Display the Frame Table
+    if (displayFrameTableFlag)
+        displayFrameTable();
+
+    // Display the Process Statistics
+    if (displayProcessStatisticsFlag)
+        displayProcessStatistics(instructionCount, ctxSwitches, processExits, cost);
 }
 
 // A function to initialize the pager based on the algorithm
@@ -442,14 +520,14 @@ int main(int argc, char *argv[])
     char algo;
 
     // TODO: Rename these variables
-    bool displayOutput = false,                    // O
-        displayPageTable = false,                  // P
-        displayFrameTable = false,                 // F
-        displayProcessStats = false,               // S
-        displayCurrentPageTable = false,           // x
-        displayAllPageTables = false,              // y
-        displayFrameTableAfterInstruction = false, // f
-        displayAging = false;                      // a
+    bool displayInstructionOutputFlag = false,         // O
+        displayPageTableFlag = false,                  // P
+        displayFrameTableFlag = false,                 // F
+        displayProcessStatsFlag = false,               // S
+        displayCurrentPageTableFlag = false,           // x
+        displayAllPageTablesFlag = false,              // y
+        displayFrameTableAfterInstructionFlag = false, // f
+        displayAgingFlag = false;                      // a
 
     const char *optstring = "f:a:o:";
     // Parse the command line arguments
@@ -480,28 +558,28 @@ int main(int argc, char *argv[])
                 switch (optarg[i])
                 {
                 case 'O':
-                    displayOutput = true;
+                    displayInstructionOutputFlag = true;
                     break;
                 case 'P':
-                    displayPageTable = true;
+                    displayPageTableFlag = true;
                     break;
                 case 'F':
-                    displayFrameTable = true;
+                    displayFrameTableFlag = true;
                     break;
                 case 'S':
-                    displayProcessStats = true;
+                    displayProcessStatsFlag = true;
                     break;
                 case 'x':
-                    displayCurrentPageTable = true;
+                    displayCurrentPageTableFlag = true;
                     break;
                 case 'y':
-                    displayAllPageTables = true;
+                    displayAllPageTablesFlag = true;
                     break;
                 case 'f':
-                    displayFrameTableAfterInstruction = true;
+                    displayFrameTableAfterInstructionFlag = true;
                     break;
                 case 'a':
-                    displayAging = true;
+                    displayAgingFlag = true;
                     break;
                 }
             }
@@ -551,7 +629,7 @@ int main(int argc, char *argv[])
     readRandomFile(randomFile);
 
     // Run the event simulation
-    simulate(inputFile, displayOutput, displayPageTable, displayFrameTable, displayProcessStats, displayCurrentPageTable, displayAllPageTables, displayFrameTableAfterInstruction, displayAging);
+    simulate(inputFile, displayInstructionOutputFlag, displayPageTableFlag, displayFrameTableFlag, displayProcessStatsFlag, displayCurrentPageTableFlag, displayAllPageTablesFlag, displayFrameTableAfterInstructionFlag, displayAgingFlag);
 
     // Close the input and random files
     fclose(inputFile);
