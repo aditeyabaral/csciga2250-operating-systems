@@ -388,30 +388,46 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
             cost += 130;
             break;
         case 'e': // Process exit
+            if (displayInstructionOutputFlag)
+                cout << "EXIT current process " << currentProcess->processNumber << endl;
+
             for (int i = 0; i < MAX_VPAGES; i++)
             {
                 currentPTE = &currentProcess->pageTable[i];
                 if (currentPTE->PRESENT)
                 {
+                    // Add the cost for unmaps
+                    cost += 410;
+
+                    // Unmap the page
                     if (displayInstructionOutputFlag)
                         cout << " UNMAP " << currentProcess->processNumber << ":" << i << endl;
                     currentProcess->unmaps++;
+
+                    // If a page is modified and file mapped, write it to the file
                     if (currentPTE->MODIFIED && currentPTE->FILE_MAPPED)
                     {
                         if (displayInstructionOutputFlag)
-                            cout << " FOUT" << endl;
+                            cout
+                                << " FOUT" << endl;
                         currentProcess->fouts++;
+                        // Add the cost for fouts
+                        cost += 2800;
                     }
-                    currentPTE->PRESENT = 0;
-                    currentPTE->MODIFIED = 0;
-                    currentPTE->REFERENCED = 0;
-                    currentPTE->PAGEDOUT = 0;
-                    currentPTE->WRITE_PROTECT = 0;
-                    currentPTE->FILE_MAPPED = 0;
+
+                    // Release the frame and add it to the free list
+                    Frame *frame = &frameTable[currentPTE->FRAME];
+                    frame->processNumber = -1;
+                    frame->pageNumber = -1;
+                    pager->addFrameToFreeList(frame);
                 }
-                Frame *frame = &frameTable[currentPTE->FRAME];
-                pager->addFrameToFreeList(frame);
+                // Reset the page table entry
                 currentPTE->PRESENT = 0;
+                currentPTE->MODIFIED = 0;
+                currentPTE->REFERENCED = 0;
+                currentPTE->PAGEDOUT = 0;
+                currentPTE->WRITE_PROTECT = 0;
+                currentPTE->FILE_MAPPED = 0;
             }
             processExits++;
             // Add the cost for process exits
