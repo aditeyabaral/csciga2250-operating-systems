@@ -82,6 +82,7 @@ public:
     uint32_t frameNumber;   // The frame number
     uint32_t processNumber; // The process number
     uint32_t pageNumber;    // The page number
+    uint32_t timeOfLastUse; // The time of last use
 };
 
 // An Instruction class to store the instruction information
@@ -109,6 +110,7 @@ vector<Process *> processes;
 class Pager
 {
 public:
+    unsigned long currentTime = 0;          // The current time, set to the instruction count
     virtual Frame *selectVictimFrame() = 0; // Select the victim frame to replace
     // A function to allocate a frame from the free list
     Frame *allocateFrameFromFreeList()
@@ -161,7 +163,7 @@ public:
 // Variables to store random values and the random index offset
 int *randomValues;
 int MAX_RANDOM_VALUES_LENGTH;
-int randomIndexOffset = 0;
+int randomIndexOffset = 0; // TODO: Move this to the Random class
 
 // The Random Pager class to implement the Random page replacement algorithm
 class Random : public Pager
@@ -194,6 +196,7 @@ public:
         // Start from the current index
         int inspectedFrames = 0;
         Frame *frame = &frameTable[index];
+        // TODO: Check for infinite loop
         while (processes[frame->processNumber]->pageTable[frame->pageNumber].REFERENCED)
         {
             // Reset the referenced bit if it is set
@@ -205,6 +208,70 @@ public:
         // Move to the next frame
         index = (index + 1) % MAX_FRAMES;
         return frame;
+    }
+};
+
+// A Working Set Pager class to implement the Working Set page replacement algorithm
+class WorkingSet : public Pager
+{
+    int index = 0;
+    int tau = 49; // The time interval tau
+public:
+    Frame *selectVictimFrame()
+    {
+        Frame *oldestFrame = nullptr;
+        int age, oldestTimeLastUsed = INT32_MAX;
+        int oldestFrameIndex = -1, startIndex = index;
+
+        do
+        {
+            Frame *frame = &frameTable[index];
+            PTE *pte = &processes[frame->processNumber]->pageTable[frame->pageNumber];
+            age = currentTime - frame->timeOfLastUse;
+            // cout << frame->frameNumber << "(" << pte->REFERENCED << " " << frame->processNumber << ":" << frame->pageNumber << " " << frame->timeOfLastUse << " " << age << ") " << endl;
+
+            // Check if the page is referenced
+            if (pte->REFERENCED)
+            {
+                // Reset the referenced bit
+                pte->REFERENCED = 0;
+                // Record the time of last use
+                frame->timeOfLastUse = currentTime;
+            }
+            else // The page is not referenced
+            {
+                // Check if the age is greater than tau
+                if (age > tau)
+                {
+                    // Select the frame
+                    index = (index + 1) % MAX_FRAMES;
+                    return frame;
+                }
+                else
+                {
+                    // Check if the frame is the oldest
+                    if (frame->timeOfLastUse < oldestTimeLastUsed)
+                    {
+                        // Store the oldest frame
+                        oldestTimeLastUsed = frame->timeOfLastUse;
+                        oldestFrame = frame;
+                        oldestFrameIndex = index;
+                    }
+                }
+            }
+
+            // Move to the next frame
+            index = (index + 1) % MAX_FRAMES;
+        } while (index != startIndex);
+
+        // If the oldestFrame is null, we have not found a victim frame
+        if (oldestFrame == nullptr)
+            return selectVictimFrame();
+        else
+        {
+            index = (oldestFrameIndex + 1) % MAX_FRAMES;
+            return oldestFrame;
+        }
     }
 };
 
@@ -393,6 +460,9 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
         if (displayInstructionOutputFlag)
             cout << instructionCount << ": ==> " << instruction->operation << " " << instruction->num << endl;
 
+        // Set the current time to the instruction count
+        pager->currentTime = instructionCount;
+
         switch (instruction->operation)
         {
         case 'c': // Context switch to new process
@@ -559,6 +629,8 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
 
                 // Display the frame table mapping
                 currentProcess->maps++;
+                // Set the time of last use for the frame
+                newFrame->timeOfLastUse = pager->currentTime;
                 // Add the cost for mapping
                 cost += 350;
                 if (displayInstructionOutputFlag)
@@ -615,6 +687,9 @@ void initPager(char algo)
         break;
     case 'r':
         pager = new Random(); // Random Algorithm
+        break;
+    case 'w':
+        pager = new WorkingSet(); // Working Set Algorithm
         break;
     }
 }
