@@ -210,6 +210,64 @@ public:
     }
 };
 
+// An Enhanced Second Chance Pager class to implement the Enhanced Second Chance page replacement algorithm
+class ESC : public Pager
+{
+    int index = 0;
+    int lastReset = -1; // The instruction number of the last reset
+    int interval = 47;  // The number of instructions before resetting the reference bits
+public:
+    Frame *selectVictimFrame()
+    {
+        // Initialise vectors to store the class frames and their indices
+        Frame *victimFrame = nullptr;
+        vector<Frame *> classFrames = vector<Frame *>(4, nullptr);
+        vector<int> classFrameIndices = vector<int>(4, -1);
+        int startIndex = index, instructionsSinceLastReset = currentTime - lastReset;
+
+        do
+        {
+            Frame *frame = &frameTable[index];
+            PTE *pte = &processes[frame->processNumber]->pageTable[frame->pageNumber];
+            // Calculate the class index
+            int classIndex = 2 * pte->REFERENCED + pte->MODIFIED;
+
+            // Check if the class frame is empty
+            if (classFrames[classIndex] == nullptr)
+            {
+                // Store the frame and its index
+                classFrames[classIndex] = frame;
+                classFrameIndices[classIndex] = index;
+            }
+
+            // Check if the reference bits need to be reset
+            if (instructionsSinceLastReset > interval)
+            {
+                // Reset the reference bits
+                pte->REFERENCED = 0;
+                lastReset = currentTime;
+            }
+
+            // Move to the next frame
+            index = (index + 1) % MAX_FRAMES;
+        } while (index != startIndex);
+
+        // Select the victim frame
+        for (int i = 0; i < 4; i++)
+        {
+            // Check if the class frame is not empty
+            if (classFrames[i] != nullptr)
+            {
+                // Select the victim frame and its index
+                victimFrame = classFrames[i];
+                index = (classFrameIndices[i] + 1) % MAX_FRAMES;
+                break;
+            }
+        }
+        return victimFrame;
+    }
+};
+
 // A Working Set Pager class to implement the Working Set page replacement algorithm
 class WorkingSet : public Pager
 {
@@ -272,64 +330,6 @@ public:
             index = (oldestFrameIndex + 1) % MAX_FRAMES;
             return oldestFrame;
         }
-    }
-};
-
-// An Enhanced Second Chance Pager class to implement the Enhanced Second Chance page replacement algorithm
-class ESC : public Pager
-{
-    int index = 0;
-    int lastReset = -1; // The instruction number of the last reset
-    int interval = 47;  // The number of instructions before resetting the reference bits
-public:
-    Frame *selectVictimFrame()
-    {
-        // Initialise vectors to store the class frames and their indices
-        Frame *victimFrame = nullptr;
-        vector<Frame *> classFrames = vector<Frame *>(4, nullptr);
-        vector<int> classFrameIndices = vector<int>(4, -1);
-        int startIndex = index, instructionsSinceLastReset = currentTime - lastReset;
-
-        do
-        {
-            Frame *frame = &frameTable[index];
-            PTE *pte = &processes[frame->processNumber]->pageTable[frame->pageNumber];
-            // Calculate the class index
-            int classIndex = 2 * pte->REFERENCED + pte->MODIFIED;
-
-            // Check if the class frame is empty
-            if (classFrames[classIndex] == nullptr)
-            {
-                // Store the frame and its index
-                classFrames[classIndex] = frame;
-                classFrameIndices[classIndex] = index;
-            }
-
-            // Check if the reference bits need to be reset
-            if (instructionsSinceLastReset > interval)
-            {
-                // Reset the reference bits
-                pte->REFERENCED = 0;
-                lastReset = currentTime;
-            }
-
-            // Move to the next frame
-            index = (index + 1) % MAX_FRAMES;
-        } while (index != startIndex);
-
-        // Select the victim frame
-        for (int i = 0; i < 4; i++)
-        {
-            // Check if the class frame is not empty
-            if (classFrames[i] != nullptr)
-            {
-                // Select the victim frame and its index
-                victimFrame = classFrames[i];
-                index = (classFrameIndices[i] + 1) % MAX_FRAMES;
-                break;
-            }
-        }
-        return victimFrame;
     }
 };
 
