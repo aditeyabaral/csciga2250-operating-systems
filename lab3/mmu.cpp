@@ -158,7 +158,32 @@ public:
     }
 };
 
-// A Clock Pager class to implement the CLOCK page replacement algorithm
+// Variables to store random values and the random index offset
+int *randomValues;
+int MAX_RANDOM_VALUES_LENGTH;
+int randomIndexOffset = 0;
+
+// The Random Pager class to implement the Random page replacement algorithm
+class Random : public Pager
+{
+public:
+    Frame *selectVictimFrame()
+    {
+        // Select a random frame
+        int randomIndex = randomNumberGenerator(MAX_FRAMES);
+        return &frameTable[randomIndex];
+    }
+
+    // A function to generate random numbers using the random values and the random index offset
+    int randomNumberGenerator(int numFrames)
+    {
+        int value = randomValues[randomIndexOffset] % numFrames;
+        randomIndexOffset = (randomIndexOffset + 1) % MAX_RANDOM_VALUES_LENGTH;
+        return value;
+    }
+};
+
+// A Clock Pager class to implement the Clock page replacement algorithm
 class Clock : public Pager
 {
     int index = 0;
@@ -257,20 +282,6 @@ void readInput(FILE *inputFile)
         // Add the process to the processes vector
         processes.push_back(process);
     }
-}
-
-// Variables to store random values and the random index offset
-int *randomValues;
-int MAX_RANDOM_VALUES_LENGTH;
-int randomIndexOffset = 0;
-
-// A function to generate random numbers using the random values and the random index offset
-int randomNumberGenerator(int burst)
-{
-    // TODO: Check indexing
-    int value = 1 + (randomValues[randomIndexOffset] % burst);
-    randomIndexOffset = (randomIndexOffset + 1) % MAX_RANDOM_VALUES_LENGTH;
-    return value;
 }
 
 // A function to read the random values from the random file and populate the randomValues array
@@ -597,10 +608,13 @@ void initPager(char algo)
     switch (algo)
     {
     case 'f':
-        pager = new FIFO(); // FIFO
+        pager = new FIFO(); // FIFO Algorithm
         break;
     case 'c':
-        pager = new Clock(); // CLOCK
+        pager = new Clock(); // Clock Algorithm
+        break;
+    case 'r':
+        pager = new Random(); // Random Algorithm
         break;
     }
 }
