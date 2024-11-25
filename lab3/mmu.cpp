@@ -175,7 +175,10 @@ public:
             processes[frame->processNumber]->pageTable[frame->pageNumber].REFERENCED = 0;
             // Move to the next frame
             index = (index + 1) % MAX_FRAMES;
+            frame = &frameTable[index];
         }
+        // Move to the next frame
+        index = (index + 1) % MAX_FRAMES;
         return frame;
     }
 };
@@ -628,7 +631,7 @@ int main(int argc, char *argv[])
         case 'f': // The number of frames
             MAX_FRAMES = atoi(optarg);
             frameTable = vector<Frame>(MAX_FRAMES);
-            // Initialize the frame table. TODO: Move this to a function
+            // Initialize the frame table and the free frames
             for (int i = 0; i < MAX_FRAMES; i++)
             {
                 Frame frame = Frame();
@@ -636,6 +639,7 @@ int main(int argc, char *argv[])
                 frame.processNumber = -1;
                 frame.pageNumber = -1;
                 frameTable[i] = frame;
+                freeFrames.push_back(&frameTable[i]);
             }
             break;
         case 'a': // The algorithm
