@@ -228,6 +228,7 @@ public:
             Frame *frame = &frameTable[index];
             PTE *pte = &processes[frame->processNumber]->pageTable[frame->pageNumber];
             age = currentTime - frame->timeOfLastUse;
+            // TODO: Add option flag
             // cout << frame->frameNumber << "(" << pte->REFERENCED << " " << frame->processNumber << ":" << frame->pageNumber << " " << frame->timeOfLastUse << " " << age << ") " << endl;
 
             // Check if the page is referenced
@@ -267,7 +268,7 @@ public:
         // If the oldestFrame is null, we have not found a victim frame
         if (oldestFrame == nullptr)
             return selectVictimFrame();
-        else
+        else // Victim frame found
         {
             index = (oldestFrameIndex + 1) % MAX_FRAMES;
             return oldestFrame;
