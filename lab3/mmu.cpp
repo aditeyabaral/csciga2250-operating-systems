@@ -12,6 +12,7 @@
 using namespace std;
 
 // A VMA class to store the virtual memory area information
+// TODO: Check if all class attributes are initialized
 class VMA
 {
 public:
@@ -82,6 +83,7 @@ public:
     uint32_t processNumber; // The process number
     uint32_t pageNumber;    // The page number
     uint32_t timeOfLastUse; // The time of last use
+    uint32_t age;           // The aging bit vector
 };
 
 // An Instruction class to store the instruction information
@@ -109,8 +111,9 @@ vector<Process *> processes;
 class Pager
 {
 public:
-    unsigned long currentTime = 0;          // The current time, set to the instruction count
-    virtual Frame *selectVictimFrame() = 0; // Select the victim frame to replace
+    unsigned long currentTime = 0;           // The current time, set to the instruction count
+    virtual Frame *selectVictimFrame() = 0;  // Select the victim frame to replace
+    virtual void resetAge(Frame *frame) = 0; // Reset the aging bit vector
     // A function to allocate a frame from the free list
     Frame *allocateFrameFromFreeList()
     {
@@ -148,6 +151,7 @@ class FIFO : public Pager
     int index = 0;
 
 public:
+    void resetAge(Frame *frame) {}
     // Select the victim frame to replace
     Frame *selectVictimFrame()
     {
@@ -168,6 +172,7 @@ int randomIndexOffset = 0; // TODO: Move this to the Random class
 class Random : public Pager
 {
 public:
+    void resetAge(Frame *frame) {}
     Frame *selectVictimFrame()
     {
         // Select a random frame
@@ -190,6 +195,7 @@ class Clock : public Pager
     int index = 0;
 
 public:
+    void resetAge(Frame *frame) {}
     Frame *selectVictimFrame()
     {
         // Start from the current index
@@ -217,6 +223,7 @@ class ESC : public Pager
     int lastReset = -1; // The instruction number of the last reset
     int interval = 47;  // The number of instructions before resetting the reference bits
 public:
+    void resetAge(Frame *frame) {}
     Frame *selectVictimFrame()
     {
         // Initialise vectors to store the class frames and their indices
@@ -252,7 +259,7 @@ public:
             index = (index + 1) % MAX_FRAMES;
         } while (index != startIndex);
 
-        // Select the victim frame
+        // Select the victim frame as the first non-empty class frame
         for (int i = 0; i < 4; i++)
         {
             // Check if the class frame is not empty
@@ -268,12 +275,73 @@ public:
     }
 };
 
+// An Aging Pager class to implement the Aging page replacement algorithm
+class Aging : public Pager
+{
+    int index = 0;
+
+public:
+    void shiftAgeRight(Frame *frame)
+    {
+        frame->age = frame->age >> 1;
+    }
+    void setLeadingBit(Frame *frame)
+    {
+        frame->age = frame->age | 0x80000000;
+    }
+    void resetAge(Frame *frame)
+    {
+        frame->age = 0x0;
+    }
+    Frame *selectVictimFrame()
+    {
+        Frame *victimFrame = nullptr;
+        int victimFrameIndex,
+            startIndex = index,
+            smallestAge = UINT32_MAX;
+
+        do
+        {
+            Frame *frame = &frameTable[index];
+            PTE *pte = &processes[frame->processNumber]->pageTable[frame->pageNumber];
+
+            // Shift the age right
+            shiftAgeRight(frame);
+            if (pte->REFERENCED)
+            {
+                // Set the leading bit if the page is referenced
+                setLeadingBit(frame);
+                pte->REFERENCED = 0;
+            }
+
+            // Check if the age is smaller than the smallest age
+            if (frame->age < smallestAge)
+            {
+                // Store the victim frame and its age
+                victimFrame = frame;
+                smallestAge = frame->age;
+                victimFrameIndex = index;
+            }
+            // TODO: Add option flag
+            // cout << frame->frameNumber << ": " << hex << frame->age << dec << endl;
+
+            // Move to the next frame
+            index = (index + 1) % MAX_FRAMES;
+        } while (index != startIndex);
+
+        // Select the victim frame
+        index = (victimFrameIndex + 1) % MAX_FRAMES;
+        return victimFrame;
+    }
+};
+
 // A Working Set Pager class to implement the Working Set page replacement algorithm
 class WorkingSet : public Pager
 {
     int index = 0;
     int tau = 49; // The time interval tau
 public:
+    void resetAge(Frame *frame) {}
     Frame *selectVictimFrame()
     {
         Frame *oldestFrame = nullptr;
@@ -689,6 +757,8 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
                 currentProcess->maps++;
                 // Set the time of last use for the frame
                 newFrame->timeOfLastUse = pager->currentTime;
+                // Reset the aging bit vector
+                pager->resetAge(newFrame);
                 // Add the cost for mapping
                 cost += 350;
                 if (displayInstructionOutputFlag)
@@ -749,6 +819,9 @@ void initPager(char algo)
     case 'e':
         pager = new ESC(); // Enhanced Second Chance Algorithm
         break;
+    case 'a':
+        pager = new Aging(); // Aging Algorithm
+        break;
     case 'w':
         pager = new WorkingSet(); // Working Set Algorithm
         break;
@@ -788,6 +861,8 @@ int main(int argc, char *argv[])
                 frame.frameNumber = i;
                 frame.processNumber = -1;
                 frame.pageNumber = -1;
+                frame.timeOfLastUse = -1;
+                frame.age = 0x0;
                 frameTable[i] = frame;
                 freeFrames.push_back(&frameTable[i]);
             }
