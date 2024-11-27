@@ -95,10 +95,10 @@ vector<Process *> processes;
 class Pager
 {
 public:
-    int index = 0;                           // The current index/hand to select the victim frame
-    unsigned long currentTime = 0;           // The current time, set to the instruction count
-    virtual Frame *selectVictimFrame() = 0;  // Select the victim frame to replace
-    virtual void resetAge(Frame *frame) = 0; // Reset the aging bit vector
+    int index = 0;                                               // The current index/hand to select the victim frame
+    unsigned long currentTime = 0;                               // The current time, set to the instruction count
+    virtual Frame *selectVictimFrame(bool displayAgingFlag) = 0; // Select the victim frame to replace
+    virtual void resetAge(Frame *frame) = 0;                     // Reset the aging bit vector
 
     // A function to allocate a frame from the free list
     Frame *allocateFrameFromFreeList()
@@ -123,13 +123,13 @@ public:
     }
 
     // A function to get a frame using the page replacement algorithm
-    Frame *getFrame()
+    Frame *getFrame(bool displayAgingFlag)
     {
         // Try to allocate a frame from the free list
         Frame *frame = allocateFrameFromFreeList();
         if (frame == nullptr)
             // If the free list is empty, select a victim frame using the page replacement algorithm
-            frame = selectVictimFrame();
+            frame = selectVictimFrame(displayAgingFlag);
         return frame;
     }
 };
@@ -141,10 +141,13 @@ public:
     void resetAge(Frame *frame) {} // No implementation needed
 
     // Select the victim frame to replace
-    Frame *selectVictimFrame()
+    Frame *selectVictimFrame(bool displayAgingFlag)
     {
         // Select the frame at the current index
         Frame *victimFrame = &frameTable[index];
+        // Display the index
+        if (displayAgingFlag)
+            cout << "ASELECT: " << index << endl;
         // Move to the next frame
         index = (index + 1) % MAX_FRAMES;
         // Return the selected frame
@@ -163,19 +166,22 @@ public:
     void resetAge(Frame *frame) {} // No implementation needed
 
     // Select the victim frame to replace
-    Frame *selectVictimFrame()
+    Frame *selectVictimFrame(bool displayAgingFlag)
     {
         // Select a random frame
-        int randomIndex = randomNumberGenerator(MAX_FRAMES);
+        int randomIndex = randomNumberGenerator(MAX_FRAMES, displayAgingFlag);
         // Return the selected frame
         return &frameTable[randomIndex];
     }
 
     // A function to generate random numbers using the random values and the random index offset
-    int randomNumberGenerator(int numFrames)
+    int randomNumberGenerator(int numFrames, bool displayAgingFlag)
     {
         // Generate a random number using the random values and the random index offset
         int value = randomValues[index] % numFrames;
+        // Display the index
+        if (displayAgingFlag)
+            cout << "ASELECT: " << index << endl;
         // Move to the next random value
         index = (index + 1) % MAX_RANDOM_VALUES_LENGTH;
         return value;
@@ -189,10 +195,11 @@ public:
     void resetAge(Frame *frame) {} // No implementation needed
 
     // Select the victim frame to replace
-    Frame *selectVictimFrame()
+    Frame *selectVictimFrame(bool displayAgingFlag)
     {
+        // Initialise the variables to store the victim frame and its index
+        int startIndex = index, inspectedFrames = 0;
         // Start from the current index
-        int inspectedFrames = 0;
         Frame *frame = &frameTable[index];
         while (processes[frame->processNumber]->pageTable[frame->pageNumber].REFERENCED)
         {
@@ -201,7 +208,12 @@ public:
             // Move to the next frame
             index = (index + 1) % MAX_FRAMES;
             frame = &frameTable[index];
+            // Increment the number of inspected frames
+            inspectedFrames++;
         }
+        // Display the selected index
+        if (displayAgingFlag)
+            cout << "ASELECT: " << startIndex << " " << inspectedFrames << endl;
         // Move to the next frame
         index = (index + 1) % MAX_FRAMES;
         // Return the selected frame
@@ -218,7 +230,7 @@ public:
     void resetAge(Frame *frame) {} // No implementation needed
 
     // Select the victim frame to replace
-    Frame *selectVictimFrame()
+    Frame *selectVictimFrame(bool displayAgingFlag)
     {
         // Initialise vectors to store the class frames and their indices
         Frame *victimFrame = nullptr;
@@ -226,8 +238,10 @@ public:
         vector<int> classFrameIndices = vector<int>(4, -1);
         // Set the start index and the number of instructions since the last reset
         int startIndex = index,
+            inspectedFrames = 0,
+            lowestClassIndex = -1,
             instructionsSinceLastReset = currentTime - lastReset;
-
+        bool resetFlag = false;
         do
         {
             Frame *frame = &frameTable[index];
@@ -250,10 +264,14 @@ public:
                 pte->REFERENCED = 0;
                 // Update the last reset instruction number
                 lastReset = currentTime;
+                // Set the reset flag
+                resetFlag = true;
             }
 
             // Move to the next frame
             index = (index + 1) % MAX_FRAMES;
+            // Increment the number of inspected frames
+            inspectedFrames++;
         } while (index != startIndex);
 
         // Select the victim frame as the first non-empty class frame
@@ -265,9 +283,17 @@ public:
                 // Select the victim frame and move to the next frame
                 victimFrame = classFrames[i];
                 index = (classFrameIndices[i] + 1) % MAX_FRAMES;
+                lowestClassIndex = i;
                 break;
             }
         }
+
+        // Display the selected index
+        if (displayAgingFlag)
+            cout << "ASELECT: "
+                 << startIndex << " " << (int)resetFlag
+                 << " | " << lowestClassIndex << " " << classFrameIndices[lowestClassIndex] << " " << inspectedFrames << endl;
+
         // Return the selected frame
         return victimFrame;
     }
@@ -296,13 +322,14 @@ public:
     }
 
     // Select the victim frame to replace
-    Frame *selectVictimFrame()
+    Frame *selectVictimFrame(bool displayAgingFlag)
     {
         // Initialise the variables to store the victim frame and its index
         Frame *victimFrame = nullptr;
         int victimFrameIndex,
             startIndex = index,
             smallestAge = UINT32_MAX;
+        string ageString = "";
 
         do
         {
@@ -328,12 +355,15 @@ public:
                 smallestAge = frame->age;
                 victimFrameIndex = index;
             }
-            // TODO: Add option flag
-            // cout << frame->frameNumber << ": " << hex << frame->age << dec << endl;
+            ageString += to_string(frame->frameNumber) + ":" + to_string(frame->age) + " ";
 
             // Move to the next frame
             index = (index + 1) % MAX_FRAMES;
         } while (index != startIndex);
+
+        // Display the selected index
+        if (displayAgingFlag)
+            cout << "ASELECT: " << startIndex << "-" << index << " | " << ageString << endl;
 
         // Move to the next frame
         index = (victimFrameIndex + 1) % MAX_FRAMES;
@@ -350,13 +380,13 @@ public:
     void resetAge(Frame *frame) {} // No implementation needed
 
     // Select the victim frame to replace
-    Frame *selectVictimFrame()
+    Frame *selectVictimFrame(bool displayAgingFlag)
     {
         // Initialise the variables to store the victim frame and its index
         Frame *oldestFrame = nullptr;
         int age, oldestTimeLastUsed = INT32_MAX;
         int oldestFrameIndex = -1, startIndex = index;
-
+        string ageString = "";
         do
         {
             Frame *frame = &frameTable[index];
@@ -364,8 +394,7 @@ public:
 
             // Calculate the age of the frame
             age = currentTime - frame->timeOfLastUse;
-            // TODO: Add option flag
-            // cout << frame->frameNumber << "(" << pte->REFERENCED << " " << frame->processNumber << ":" << frame->pageNumber << " " << frame->timeOfLastUse << " " << age << ") " << endl;
+            ageString += to_string(frame->frameNumber) + "(" + to_string(pte->REFERENCED) + " " + to_string(frame->processNumber) + ":" + to_string(frame->pageNumber) + " " + to_string(frame->timeOfLastUse) + " " + to_string(age) + ") ";
 
             // Check if the page is referenced
             if (pte->REFERENCED)
@@ -405,9 +434,13 @@ public:
         // If the oldestFrame is null, we have not found a victim frame
         if (oldestFrame == nullptr)
             // Recursively call the selectVictimFrame function to find a victim frame
-            return selectVictimFrame();
+            return selectVictimFrame(displayAgingFlag);
         else // Victim frame found
         {
+            // Display the selected index
+            if (displayAgingFlag)
+                cout << "ASELECT: " << startIndex << "-" << oldestFrameIndex << " | " << ageString << endl;
+
             // Move to the next frame
             index = (oldestFrameIndex + 1) % MAX_FRAMES;
             // Return the selected frame
@@ -695,7 +728,7 @@ void simulate(FILE *inputFile,
                 currentPTE->WRITE_PROTECT = vma->writeProtected;
 
                 // Fetch a new frame for the page
-                Frame *newFrame = pager->getFrame();
+                Frame *newFrame = pager->getFrame(displayAgingFlag);
                 // Check if the frame is mapped to a page table entry
                 if (newFrame->processNumber != -1)
                 {
