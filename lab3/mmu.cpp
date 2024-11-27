@@ -1,18 +1,13 @@
 #include <iostream>
 #include <getopt.h>
-#include <iomanip>
-#include <fstream>
-#include <string>
 #include <cstring>
 #include <cctype>
-#include <cstdlib>
 #include <deque>
 #include <algorithm>
 
 using namespace std;
 
 // A VMA class to store the virtual memory area information
-// TODO: Check if all class attributes are initialized
 class VMA
 {
 public:
@@ -63,7 +58,7 @@ public:
         return false;
     }
 
-    // A function to get the VMA for the page
+    // A function to fetch the VMA in which the page is present
     VMA *getVMAForPage(int vpage)
     {
         for (VMA &vma : vmas)
@@ -114,6 +109,7 @@ public:
     unsigned long currentTime = 0;           // The current time, set to the instruction count
     virtual Frame *selectVictimFrame() = 0;  // Select the victim frame to replace
     virtual void resetAge(Frame *frame) = 0; // Reset the aging bit vector
+
     // A function to allocate a frame from the free list
     Frame *allocateFrameFromFreeList()
     {
@@ -166,11 +162,12 @@ public:
 // Variables to store random values and the random index offset
 int *randomValues;
 int MAX_RANDOM_VALUES_LENGTH;
-int randomIndexOffset = 0; // TODO: Move this to the Random class
 
 // The Random Pager class to implement the Random page replacement algorithm
 class Random : public Pager
 {
+    int index = 0;
+
 public:
     void resetAge(Frame *frame) {}
     Frame *selectVictimFrame()
@@ -183,8 +180,8 @@ public:
     // A function to generate random numbers using the random values and the random index offset
     int randomNumberGenerator(int numFrames)
     {
-        int value = randomValues[randomIndexOffset] % numFrames;
-        randomIndexOffset = (randomIndexOffset + 1) % MAX_RANDOM_VALUES_LENGTH;
+        int value = randomValues[index] % numFrames;
+        index = (index + 1) % MAX_RANDOM_VALUES_LENGTH;
         return value;
     }
 };
@@ -201,7 +198,6 @@ public:
         // Start from the current index
         int inspectedFrames = 0;
         Frame *frame = &frameTable[index];
-        // TODO: Check for infinite loop
         while (processes[frame->processNumber]->pageTable[frame->pageNumber].REFERENCED)
         {
             // Reset the referenced bit if it is set
@@ -430,6 +426,7 @@ void readInput(FILE *inputFile)
 
         // Read the number of virtual memory areas
         numVMA = atoi(line);
+        process->vmas = vector<VMA>();
         // Initialize the page table for the process
         process->pageTable = vector<PTE>(MAX_VPAGES);
 
@@ -832,20 +829,17 @@ void initPager(char algo)
 int main(int argc, char *argv[])
 {
     int opt;
-    int numFrames;
-    char algo;
+    char algo;                                               // The algorithm
+    const char *optstring = "f:a:o:";                        // The options
+    bool displayInstructionOutcomeFlag = false,              // O
+        displayPageTableAfterSimulationFlag = false,         // P
+        displayFrameTableAfterSimulationFlag = false,        // F
+        displayProcessStatisticsAfterSimulaitonFlag = false, // S
+        displayCurrentPageTableAfterInstructionFlag = false, // x
+        displayAllPageTablesAfterInstructionFlag = false,    // y
+        displayFrameTableAfterInstructionFlag = false,       // f
+        displayAgingFlag = false;                            // a
 
-    // TODO: Rename these variables
-    bool displayInstructionOutputFlag = false,         // O
-        displayPageTableFlag = false,                  // P
-        displayFrameTableFlag = false,                 // F
-        displayProcessStatsFlag = false,               // S
-        displayCurrentPageTableFlag = false,           // x
-        displayAllPageTablesFlag = false,              // y
-        displayFrameTableAfterInstructionFlag = false, // f
-        displayAgingFlag = false;                      // a
-
-    const char *optstring = "f:a:o:";
     // Parse the command line arguments
     while ((opt = getopt(argc, argv, optstring)) != -1)
     {
@@ -853,8 +847,8 @@ int main(int argc, char *argv[])
         {
         case 'f': // The number of frames
             MAX_FRAMES = atoi(optarg);
-            frameTable = vector<Frame>(MAX_FRAMES);
             // Initialize the frame table and the free frames
+            frameTable = vector<Frame>(MAX_FRAMES);
             for (int i = 0; i < MAX_FRAMES; i++)
             {
                 Frame frame = Frame();
@@ -869,30 +863,31 @@ int main(int argc, char *argv[])
             break;
         case 'a': // The algorithm
             algo = *optarg;
+            // Initialize the pager based on the algorithm
             initPager(algo);
             break;
         case 'o': // The options
             for (int i = 0; i < strlen(optarg); i++)
             {
-                switch (optarg[i])
+                switch (optarg[i]) // Set the display flags based on the options
                 {
                 case 'O':
-                    displayInstructionOutputFlag = true;
+                    displayInstructionOutcomeFlag = true;
                     break;
                 case 'P':
-                    displayPageTableFlag = true;
+                    displayPageTableAfterSimulationFlag = true;
                     break;
                 case 'F':
-                    displayFrameTableFlag = true;
+                    displayFrameTableAfterSimulationFlag = true;
                     break;
                 case 'S':
-                    displayProcessStatsFlag = true;
+                    displayProcessStatisticsAfterSimulaitonFlag = true;
                     break;
                 case 'x':
-                    displayCurrentPageTableFlag = true;
+                    displayCurrentPageTableAfterInstructionFlag = true;
                     break;
                 case 'y':
-                    displayAllPageTablesFlag = true;
+                    displayAllPageTablesAfterInstructionFlag = true;
                     break;
                 case 'f':
                     displayFrameTableAfterInstructionFlag = true;
@@ -941,14 +936,14 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    // Read the input file and populate the processes and instructions
+    // Read the input file and populate the processes
     readInput(inputFile);
 
     // Read the random values from the random file
     readRandomFile(randomFile);
 
     // Run the event simulation
-    simulate(inputFile, displayInstructionOutputFlag, displayPageTableFlag, displayFrameTableFlag, displayProcessStatsFlag, displayCurrentPageTableFlag, displayAllPageTablesFlag, displayFrameTableAfterInstructionFlag, displayAgingFlag);
+    simulate(inputFile, displayInstructionOutcomeFlag, displayPageTableAfterSimulationFlag, displayFrameTableAfterSimulationFlag, displayProcessStatisticsAfterSimulaitonFlag, displayCurrentPageTableAfterInstructionFlag, displayAllPageTablesAfterInstructionFlag, displayFrameTableAfterInstructionFlag, displayAgingFlag);
 
     // Close the input and random files
     fclose(inputFile);
