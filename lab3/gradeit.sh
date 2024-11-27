@@ -4,7 +4,7 @@
 
 INPUTS=${INPUTS:-"`seq 1 11`"}
 ALGOS=${ALGOS:-" f  r  c  e  a  w"}
-FRAMES=${FRAMES:-"16 31"}
+FRAMES=${FRAMES:-"16 31 32"}
 
 DIR1=$1
 DIR2=$2
