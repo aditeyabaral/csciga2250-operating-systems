@@ -21,15 +21,13 @@ public:
 class PTE
 {
 public:
-    uint32_t FRAME : 7;             // The frame number
-    uint32_t PRESENT : 1;           // The present bit
-    uint32_t MODIFIED : 1;          // The modified bit
-    uint32_t REFERENCED : 1;        // The referenced bit
-    uint32_t PAGEDOUT : 1;          // The paged-out bit
-    uint32_t WRITE_PROTECT : 1;     // The write-protected bit
-    uint32_t WRITE_PROTECT_SET : 1; // The write-protected set bit
-    uint32_t FILE_MAPPED : 1;       // The file-mapped bit
-    uint32_t FILE_MAPPED_SET : 1;   // The file-mapped set bit
+    uint32_t FRAME : 7;         // The frame number
+    uint32_t PRESENT : 1;       // The present bit
+    uint32_t MODIFIED : 1;      // The modified bit
+    uint32_t REFERENCED : 1;    // The referenced bit
+    uint32_t PAGEDOUT : 1;      // The paged-out bit
+    uint32_t WRITE_PROTECT : 1; // The write-protected bit
+    uint32_t FILE_MAPPED : 1;   // The file-mapped bit
 };
 
 // A Process class to store the process information
@@ -48,17 +46,6 @@ public:
     int zeros;             // The number of zeros
     int segv;              // The number of segv
     int segprot;           // The number of segprot
-
-    // A function to check if the page is in the virtual memory area of the process
-    bool checkPageInVMA(int vpage)
-    {
-        for (VMA vma : vmas)
-        {
-            if (vpage >= vma.startPage && vpage <= vma.endPage)
-                return true;
-        }
-        return false;
-    }
 
     // A function to fetch the VMA in which the page is present
     VMA *getVMAForPage(int vpage)
@@ -678,9 +665,7 @@ void simulate(FILE *inputFile,
                 currentPTE->REFERENCED = 0;
                 currentPTE->PAGEDOUT = 0;
                 currentPTE->WRITE_PROTECT = 0;
-                // currentPTE->WRITE_PROTECT_SET = 0; // TODO: Check if this is needed
                 currentPTE->FILE_MAPPED = 0;
-                // currentPTE->FILE_MAPPED_SET = 0; //TODO: Check if this is needed
             }
             processExits++; // Increment the process exits count
             cost += 1230;   // Add the cost for process exits
@@ -694,7 +679,8 @@ void simulate(FILE *inputFile,
             if (!currentPTE->PRESENT) // Page fault
             {
                 // Check if the page is in the virtual memory area of the process
-                if (!currentProcess->checkPageInVMA(vpage))
+                VMA *vma = currentProcess->getVMAForPage(vpage); // Fetch the VMA for the page
+                if (vma == nullptr)                              // Check if the page is not in the VMA
                 {
                     // Not a valid page, move to the next instruction
                     currentProcess->segv++;            // Increment the segv count
@@ -705,9 +691,6 @@ void simulate(FILE *inputFile,
                 }
 
                 // Set the file-mapped and write-protected bits for the page table entry.
-                // TODO: Check if a loop can be done only once
-                VMA *vma = currentProcess->getVMAForPage(vpage); // Fetch the VMA for the page
-                // Set the file-mapped and write-protected bits
                 currentPTE->FILE_MAPPED = vma->fileMapped;
                 currentPTE->WRITE_PROTECT = vma->writeProtected;
 
@@ -752,8 +735,8 @@ void simulate(FILE *inputFile,
                     victimPTE->PRESENT = 0;
                     victimPTE->MODIFIED = 0;
                     victimPTE->REFERENCED = 0;
-                    // victimPTE->WRITE_PROTECT = 0; // TODO: Check this
-                    // victimPTE->FILE_MAPPED = 0; // TODO: Check this
+                    victimPTE->WRITE_PROTECT = 0;
+                    victimPTE->FILE_MAPPED = 0;
                 }
 
                 // Map new frame to current page table entry
