@@ -815,6 +815,18 @@ void simulate(FILE *inputFile,
         }
         // Increment the instruction count
         instructionCount++;
+
+        // Display the current page table after the instruction
+        if (displayCurrentPageTableAfterInstructionFlag)
+            displayProcessPageTable(currentProcess);
+
+        // Display all page tables after the instruction
+        if (displayAllPageTablesAfterInstructionFlag)
+            displayAllProcessPageTable();
+
+        // Display the frame table after the instruction
+        if (displayFrameTableAfterInstructionFlag)
+            displayFrameTable();
     }
 
     // Display the Page Table
