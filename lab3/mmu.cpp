@@ -106,6 +106,7 @@ vector<Process *> processes;
 class Pager
 {
 public:
+    int index = 0;                           // The current index/hand to select the victim frame
     unsigned long currentTime = 0;           // The current time, set to the instruction count
     virtual Frame *selectVictimFrame() = 0;  // Select the victim frame to replace
     virtual void resetAge(Frame *frame) = 0; // Reset the aging bit vector
@@ -113,19 +114,22 @@ public:
     // A function to allocate a frame from the free list
     Frame *allocateFrameFromFreeList()
     {
+        // Check if the free list is not empty
         if (!freeFrames.empty())
         {
+            // Allocate a frame from the free list
             Frame *frame = freeFrames.front();
             freeFrames.pop_front();
             return frame;
         }
-        else
+        else // The free list is empty
             return nullptr;
     }
 
     // A function to add a frame to the free list
     void addFrameToFreeList(Frame *frame)
     {
+        // Add the frame to the free list
         freeFrames.push_back(frame);
     }
 
@@ -144,18 +148,18 @@ public:
 // The FIFO Pager class to implement the FIFO page replacement algorithm
 class FIFO : public Pager
 {
-    int index = 0;
-
 public:
-    void resetAge(Frame *frame) {}
+    void resetAge(Frame *frame) {} // No implementation needed
+
     // Select the victim frame to replace
     Frame *selectVictimFrame()
     {
         // Select the frame at the current index
-        Frame *frame = &frameTable[index];
+        Frame *victimFrame = &frameTable[index];
         // Move to the next frame
         index = (index + 1) % MAX_FRAMES;
-        return frame;
+        // Return the selected frame
+        return victimFrame;
     }
 };
 
@@ -166,21 +170,24 @@ int MAX_RANDOM_VALUES_LENGTH;
 // The Random Pager class to implement the Random page replacement algorithm
 class Random : public Pager
 {
-    int index = 0;
-
 public:
-    void resetAge(Frame *frame) {}
+    void resetAge(Frame *frame) {} // No implementation needed
+
+    // Select the victim frame to replace
     Frame *selectVictimFrame()
     {
         // Select a random frame
         int randomIndex = randomNumberGenerator(MAX_FRAMES);
+        // Return the selected frame
         return &frameTable[randomIndex];
     }
 
     // A function to generate random numbers using the random values and the random index offset
     int randomNumberGenerator(int numFrames)
     {
+        // Generate a random number using the random values and the random index offset
         int value = randomValues[index] % numFrames;
+        // Move to the next random value
         index = (index + 1) % MAX_RANDOM_VALUES_LENGTH;
         return value;
     }
@@ -189,10 +196,10 @@ public:
 // A Clock Pager class to implement the Clock page replacement algorithm
 class Clock : public Pager
 {
-    int index = 0;
-
 public:
-    void resetAge(Frame *frame) {}
+    void resetAge(Frame *frame) {} // No implementation needed
+
+    // Select the victim frame to replace
     Frame *selectVictimFrame()
     {
         // Start from the current index
@@ -208,6 +215,7 @@ public:
         }
         // Move to the next frame
         index = (index + 1) % MAX_FRAMES;
+        // Return the selected frame
         return frame;
     }
 };
@@ -215,18 +223,21 @@ public:
 // An Enhanced Second Chance Pager class to implement the Enhanced Second Chance page replacement algorithm
 class ESC : public Pager
 {
-    int index = 0;
     int lastReset = -1; // The instruction number of the last reset
     int interval = 47;  // The number of instructions before resetting the reference bits
 public:
-    void resetAge(Frame *frame) {}
+    void resetAge(Frame *frame) {} // No implementation needed
+
+    // Select the victim frame to replace
     Frame *selectVictimFrame()
     {
         // Initialise vectors to store the class frames and their indices
         Frame *victimFrame = nullptr;
         vector<Frame *> classFrames = vector<Frame *>(4, nullptr);
         vector<int> classFrameIndices = vector<int>(4, -1);
-        int startIndex = index, instructionsSinceLastReset = currentTime - lastReset;
+        // Set the start index and the number of instructions since the last reset
+        int startIndex = index,
+            instructionsSinceLastReset = currentTime - lastReset;
 
         do
         {
@@ -248,6 +259,7 @@ public:
             {
                 // Reset the reference bits
                 pte->REFERENCED = 0;
+                // Update the last reset instruction number
                 lastReset = currentTime;
             }
 
@@ -261,12 +273,13 @@ public:
             // Check if the class frame is not empty
             if (classFrames[i] != nullptr)
             {
-                // Select the victim frame and its index
+                // Select the victim frame and move to the next frame
                 victimFrame = classFrames[i];
                 index = (classFrameIndices[i] + 1) % MAX_FRAMES;
                 break;
             }
         }
+        // Return the selected frame
         return victimFrame;
     }
 };
@@ -274,23 +287,29 @@ public:
 // An Aging Pager class to implement the Aging page replacement algorithm
 class Aging : public Pager
 {
-    int index = 0;
-
 public:
+    // Shift the aging bit vector to the right
     void shiftAgeRight(Frame *frame)
     {
         frame->age = frame->age >> 1;
     }
+
+    // Set the leading bit of the aging bit vector
     void setLeadingBit(Frame *frame)
     {
         frame->age = frame->age | 0x80000000;
     }
+
+    // Reset the aging bit vector
     void resetAge(Frame *frame)
     {
         frame->age = 0x0;
     }
+
+    // Select the victim frame to replace
     Frame *selectVictimFrame()
     {
+        // Initialise the variables to store the victim frame and its index
         Frame *victimFrame = nullptr;
         int victimFrameIndex,
             startIndex = index,
@@ -303,10 +322,12 @@ public:
 
             // Shift the age right
             shiftAgeRight(frame);
+            // Check if the page is referenced
             if (pte->REFERENCED)
             {
                 // Set the leading bit if the page is referenced
                 setLeadingBit(frame);
+                // Reset the referenced bit
                 pte->REFERENCED = 0;
             }
 
@@ -325,8 +346,9 @@ public:
             index = (index + 1) % MAX_FRAMES;
         } while (index != startIndex);
 
-        // Select the victim frame
+        // Move to the next frame
         index = (victimFrameIndex + 1) % MAX_FRAMES;
+        // Return the selected frame
         return victimFrame;
     }
 };
@@ -334,12 +356,14 @@ public:
 // A Working Set Pager class to implement the Working Set page replacement algorithm
 class WorkingSet : public Pager
 {
-    int index = 0;
     int tau = 49; // The time interval tau
 public:
-    void resetAge(Frame *frame) {}
+    void resetAge(Frame *frame) {} // No implementation needed
+
+    // Select the victim frame to replace
     Frame *selectVictimFrame()
     {
+        // Initialise the variables to store the victim frame and its index
         Frame *oldestFrame = nullptr;
         int age, oldestTimeLastUsed = INT32_MAX;
         int oldestFrameIndex = -1, startIndex = index;
@@ -348,6 +372,8 @@ public:
         {
             Frame *frame = &frameTable[index];
             PTE *pte = &processes[frame->processNumber]->pageTable[frame->pageNumber];
+
+            // Calculate the age of the frame
             age = currentTime - frame->timeOfLastUse;
             // TODO: Add option flag
             // cout << frame->frameNumber << "(" << pte->REFERENCED << " " << frame->processNumber << ":" << frame->pageNumber << " " << frame->timeOfLastUse << " " << age << ") " << endl;
@@ -367,6 +393,7 @@ public:
                 {
                     // Select the frame
                     index = (index + 1) % MAX_FRAMES;
+                    // Return the selected frame
                     return frame;
                 }
                 else
@@ -388,10 +415,13 @@ public:
 
         // If the oldestFrame is null, we have not found a victim frame
         if (oldestFrame == nullptr)
+            // Recursively call the selectVictimFrame function to find a victim frame
             return selectVictimFrame();
         else // Victim frame found
         {
+            // Move to the next frame
             index = (oldestFrameIndex + 1) % MAX_FRAMES;
+            // Return the selected frame
             return oldestFrame;
         }
     }
@@ -403,8 +433,8 @@ Pager *pager;
 // A function to read the input file and populate the processes and instructions
 void readInput(FILE *inputFile)
 {
-    static char line[1024];
-    int numProcesses, numVMA;
+    static char line[1024];   // A buffer to store the line read from the file
+    int numProcesses, numVMA; // Variables to store the number of processes and virtual memory areas
 
     // Skip lines that begin with a '#'
     while (fgets(line, 1024, inputFile) != NULL && line[0] == '#')
@@ -477,14 +507,14 @@ void readInput(FILE *inputFile)
 // A function to read the random values from the random file and populate the randomValues array
 void readRandomFile(FILE *randomFile)
 {
-    // Read the random values from the random file. The first line is the number of random values and the rest are the random values
-    static char line[1024];
-    if (fgets(line, 1024, randomFile) != NULL)
+    static char line[1024];                    // A buffer to store the line read from the file
+    if (fgets(line, 1024, randomFile) != NULL) // Read the first line to get the number of random values
     {
-        MAX_RANDOM_VALUES_LENGTH = atoi(line);
-        randomValues = (int *)calloc(MAX_RANDOM_VALUES_LENGTH, sizeof(int));
+        MAX_RANDOM_VALUES_LENGTH = atoi(line);                               // Set the number of random values
+        randomValues = (int *)calloc(MAX_RANDOM_VALUES_LENGTH, sizeof(int)); // Allocate memory for the random values
         for (int i = 0; i < MAX_RANDOM_VALUES_LENGTH; i++)
         {
+            // Read each random value
             if (fgets(line, 1024, randomFile) != NULL)
                 randomValues[i] = atoi(line);
         }
@@ -494,38 +524,42 @@ void readRandomFile(FILE *randomFile)
 // A function to get the next instruction from the input file
 bool getNextInstruction(FILE *inputFile, Instruction *instruction)
 {
-    static char line[1024];
+    static char line[1024]; // A buffer to store the line read from the file
 
     // Skip lines that begin with a '#'
     while (fgets(line, 1024, inputFile) != NULL && line[0] == '#')
         ;
 
-    if (feof(inputFile))
+    if (feof(inputFile)) // Check if the end of file has been reached
     {
         // End of file
-        instruction = nullptr;
-        return false;
+        instruction = nullptr; // Set the instruction to null
+        return false;          // Return false
     }
     else
     {
         // Read the instruction information
-        instruction->operation = line[0];
-        instruction->num = atoi(strtok(line + 2, " "));
-        return true;
+        instruction->operation = line[0];               // Read the operation
+        instruction->num = atoi(strtok(line + 2, " ")); // Read the number
+        return true;                                    // Return true
     }
 }
 
-// A function to display the process statistics
-void displayProcessStatistics(unsigned long instructionCount, unsigned long ctxSwitches, unsigned long processExits, unsigned long long cost)
+// A function to display the statistics of a single process
+void displayProcessStatistics(Process *process)
+{
+    cout << "PROC[" << process->processNumber << "]: U=" << process->unmaps
+         << " M=" << process->maps << " I=" << process->ins
+         << " O=" << process->outs << " FI=" << process->fins
+         << " FO=" << process->fouts << " Z=" << process->zeros
+         << " SV=" << process->segv << " SP=" << process->segprot << endl;
+}
+
+// A function to display the statistics of all processes
+void displayAllProcessStatistics(unsigned long instructionCount, unsigned long ctxSwitches, unsigned long processExits, unsigned long long cost)
 {
     for (Process *process : processes)
-    {
-        cout << "PROC[" << process->processNumber << "]: U=" << process->unmaps
-             << " M=" << process->maps << " I=" << process->ins
-             << " O=" << process->outs << " FI=" << process->fins
-             << " FO=" << process->fouts << " Z=" << process->zeros
-             << " SV=" << process->segv << " SP=" << process->segprot << endl;
-    }
+        displayProcessStatistics(process);
     cout << "TOTALCOST " << instructionCount << " " << ctxSwitches << " " << processExits << " " << cost << " " << sizeof(PTE) << endl;
 }
 
@@ -539,6 +573,24 @@ void displayFrameTable()
             cout << " *";
         else
             cout << " " << frame.processNumber << ":" << frame.pageNumber;
+    }
+    cout << endl;
+}
+
+// A function to display the page table of a process
+void displayProcessPageTable(Process *process)
+{
+    cout << "PT[" << process->processNumber << "]:";
+    for (int i = 0; i < MAX_VPAGES; i++)
+    {
+        PTE pte = process->pageTable[i];
+        if (pte.PRESENT)
+            cout << " " << i << ":"
+                 << (pte.REFERENCED ? "R" : "-")
+                 << (pte.MODIFIED ? "M" : "-")
+                 << (pte.PAGEDOUT ? "S" : "-");
+        else
+            cout << " " << (pte.PAGEDOUT ? "#" : "*");
     }
     cout << endl;
 }
@@ -796,7 +848,7 @@ void simulate(FILE *inputFile, bool displayInstructionOutputFlag, bool displayPa
 
     // Display the Process Statistics
     if (displayProcessStatisticsFlag)
-        displayProcessStatistics(instructionCount, ctxSwitches, processExits, cost);
+        displayAllProcessStatistics(instructionCount, ctxSwitches, processExits, cost);
 }
 
 // A function to initialize the pager based on the algorithm
