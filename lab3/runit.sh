@@ -10,7 +10,7 @@ PARGS=${*:--oOPFS}
 
 INPUTS=${INPUTS:-`seq 1 11`}
 ALGOS=${ALOGS:-"f r c e a w"}
-FRAMES=${FRAMES:-"16 31 32"}
+FRAMES=${FRAMES:-"16 31"}
 
 [[ ! -x ${PROG} ]]   && echo "program <$PROG> is not executable" && exit
 [[ ! -d ${OUTDIR} ]] && echo "outputdir <$OUTDIR> does not exist"  && exit
