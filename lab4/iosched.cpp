@@ -17,7 +17,6 @@ public:
     int startTime;   // The start time of the IO operation
     int endTime;     // The end time of the IO operation
     int track;       // The track number of the IO operation
-    bool completed;  // The completion status of the IO operation
 };
 
 // An IO Scheduler class to implement the IO scheduling algorithms
@@ -29,8 +28,8 @@ public:
     queue<IO *> ioQueue = queue<IO *>();                                   // The IO queue to store the IO requests
     void setDirection(int track) { direction = (track >= head) ? 1 : -1; } // Set the movement direction based on the track
     void moveHead(int step = 1) { head += direction * step; }              // Move the head based on the direction
+    void addIORequest(IO *io) { ioQueue.push(io); }                        // Add an IO request to the IO queue
     virtual IO *getIORequest() = 0;                                        // Get the next IO request
-    virtual void addIORequest(IO *io) = 0;                                 // Add an IO request to the IO queue
 };
 
 // A First In First Out (FIFO) IO Scheduler class
@@ -50,14 +49,39 @@ public:
         else // The IO queue is empty
             return nullptr;
     }
-
-    // Add an IO request to the IO queue
-    void addIORequest(IO *io)
-    {
-        // Add the IO request to the IO queue
-        ioQueue.push(io);
-    }
 };
+
+// // A Shortest Seek Time First (SSTF) IO Scheduler class
+// class SSTF : public IOScheduler
+// {
+// public:
+//     // Get the next IO request
+//     IO *getIORequest()
+//     {
+//         if (!ioQueue.empty()) // Check if the IO queue is not empty
+//         {
+//             // Get the next IO request
+//             IO *closestIO = ioQueue.front();
+//             int closestDistance = abs(closestIO->track - head);
+//             for (int i = 1; i < ioQueue.size(); i++)
+//             {
+//                 IO *io = ioQueue.front();
+//                 int distance = abs(io->track - head);
+//                 if (distance < closestDistance)
+//                 {
+//                     closestIO = io;
+//                     closestDistance = distance;
+//                 }
+//                 ioQueue.pop();
+//                 ioQueue.push(io);
+//             }
+//             ioQueue.pop();
+//             return closestIO;
+//         }
+//         else // The IO queue is empty
+//             return nullptr;
+//     }
+// };
 
 // A global IOScheduler object to represent the IO scheduling algorithm
 IOScheduler *scheduler;
@@ -83,8 +107,6 @@ void readInput(FILE *inputFile)
         io->id = numOperations++;
         io->arrivalTime = atoi(strtok(line, " "));
         io->track = atoi(strtok(NULL, " "));
-        // Set the IO operation status
-        io->completed = false;
         // Add the IO operation to the IO operations vector
         operations.push(io);
     }
@@ -105,23 +127,21 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
     while (true)
     {
         // Check if a new IO operation has arrived at the current time
-        if (operations.front()->arrivalTime == currentTime && !operations.front()->completed)
+        if (!operations.empty() && operations.front()->arrivalTime == currentTime)
         {
             // Add the IO operation to the IO queue
             IO *io = operations.front();
             scheduler->addIORequest(io);
+            // Remove the IO operation from the operations queue
+            operations.pop();
             // Display the arrival of the IO operation
             if (displayExecutionTraceFlag)
                 cout << currentTime << ": " << io->id << " add " << io->track << "\n";
-            // Remove the IO operation from the IO operations queue
-            operations.pop();
         }
 
         // Check if the current IO operation has completed
         if (currentIO != nullptr && currentIO->track == scheduler->head)
         {
-            // Set the completion status of the IO operation
-            currentIO->completed = true;
             // Set the end time of the IO operation
             currentIO->endTime = currentTime;
             // Add the turnaround time of the IO operation
@@ -130,8 +150,6 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
             if (displayExecutionTraceFlag)
                 cout << currentTime << ": " << currentIO->id << " finish " << (currentIO->endTime - currentIO->startTime) << "\n";
             cout << setw(5) << currentIO->id << ": " << setw(5) << currentIO->arrivalTime << " " << setw(5) << currentIO->startTime << " " << setw(5) << currentIO->endTime << "\n";
-            // Add the IO operation to the IO operations queue
-            operations.push(currentIO);
             // Set the current IO operation to null
             currentIO = nullptr;
         }
@@ -159,7 +177,7 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
                 scheduler->setDirection(currentIO->track);
             }
             // Check if there are no pending IO operations to be processed
-            else if (operations.front()->completed)
+            else if (operations.empty())
                 break;
         }
 
