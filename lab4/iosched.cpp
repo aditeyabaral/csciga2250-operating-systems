@@ -3,6 +3,7 @@
 #include <cstring>
 #include <iomanip>
 #include <cctype>
+#include <deque>
 #include <queue>
 #include <algorithm>
 
@@ -25,10 +26,10 @@ class IOScheduler
 public:
     int head = 0;                                                          // The current head position
     int direction = 1;                                                     // The current movement direction
-    queue<IO *> ioQueue = queue<IO *>();                                   // The IO queue to store the IO requests
+    deque<IO *> ioQueue = deque<IO *>();                                   // The IO queue to store the IO requests
     void setDirection(int track) { direction = (track >= head) ? 1 : -1; } // Set the movement direction based on the track
     void moveHead(int step = 1) { head += direction * step; }              // Move the head based on the direction
-    void addIORequest(IO *io) { ioQueue.push(io); }                        // Add an IO request to the IO queue
+    void addIORequest(IO *io) { ioQueue.push_back(io); }                   // Add an IO request to the IO queue
     virtual IO *getIORequest() = 0;                                        // Get the next IO request
 };
 
@@ -36,14 +37,14 @@ public:
 class FIFO : public IOScheduler
 {
 public:
-    // Get the next IO request
+    // Get the next IO request from the IO queue
     IO *getIORequest()
     {
         if (!ioQueue.empty()) // Check if the IO queue is not empty
         {
             // Get the next IO request
             IO *io = ioQueue.front();
-            ioQueue.pop();
+            ioQueue.pop_front();
             return io;
         }
         else // The IO queue is empty
@@ -51,37 +52,37 @@ public:
     }
 };
 
-// // A Shortest Seek Time First (SSTF) IO Scheduler class
-// class SSTF : public IOScheduler
-// {
-// public:
-//     // Get the next IO request
-//     IO *getIORequest()
-//     {
-//         if (!ioQueue.empty()) // Check if the IO queue is not empty
-//         {
-//             // Get the next IO request
-//             IO *closestIO = ioQueue.front();
-//             int closestDistance = abs(closestIO->track - head);
-//             for (int i = 1; i < ioQueue.size(); i++)
-//             {
-//                 IO *io = ioQueue.front();
-//                 int distance = abs(io->track - head);
-//                 if (distance < closestDistance)
-//                 {
-//                     closestIO = io;
-//                     closestDistance = distance;
-//                 }
-//                 ioQueue.pop();
-//                 ioQueue.push(io);
-//             }
-//             ioQueue.pop();
-//             return closestIO;
-//         }
-//         else // The IO queue is empty
-//             return nullptr;
-//     }
-// };
+// A Shortest Seek Time First (SSTF) IO Scheduler class
+class SSTF : public IOScheduler
+{
+public:
+    // Get the next IO request from the IO queue
+    IO *getIORequest()
+    {
+        if (!ioQueue.empty()) // Check if the IO queue is not empty
+        {
+            IO *closestIO = nullptr;
+            int closestIoIndex, distance, minDistance = INT32_MAX;
+            // Find the closest IO request
+            for (int i = 0; i < ioQueue.size(); i++)
+            {
+                distance = abs(ioQueue[i]->track - head);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestIO = ioQueue[i];
+                    closestIoIndex = i;
+                }
+            }
+            // Remove the closest IO request from the IO queue
+            ioQueue.erase(ioQueue.begin() + closestIoIndex);
+            // Return the closest IO request
+            return closestIO;
+        }
+        else // The IO queue is empty
+            return nullptr;
+    }
+};
 
 // A global IOScheduler object to represent the IO scheduling algorithm
 IOScheduler *scheduler;
@@ -204,9 +205,9 @@ void initScheduler(char algo)
     case 'N':
         scheduler = new FIFO(); // FIFO Algorithm
         break;
-    // case 'S':
-    //     scheduler = new SSTF(); // SSTF Algorithm
-    //     break;
+    case 'S':
+        scheduler = new SSTF(); // SSTF Algorithm
+        break;
     // case 'L':
     //     scheduler = new LOOK(); // LOOK Algorithm
     //     break;
