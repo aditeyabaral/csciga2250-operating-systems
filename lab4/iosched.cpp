@@ -25,13 +25,13 @@ public:
 class IOScheduler
 {
 public:
-    int head = 0;                                                          // The current head position
-    int direction = 1;                                                     // The current movement direction
-    deque<IO *> ioQueue = deque<IO *>();                                   // The IO queue to store the IO requests
-    void setDirection(int track) { direction = (track >= head) ? 1 : -1; } // Set the movement direction based on the track
-    void moveHead(int step = 1) { head += direction * step; }              // Move the head based on the direction
-    void addIORequest(IO *io) { ioQueue.push_back(io); }                   // Add an IO request to the IO queue
-    virtual IO *getIORequest() = 0;                                        // Get the next IO request
+    int head = 0;                                                                                  // The current head position
+    int direction = 1;                                                                             // The current movement direction
+    deque<IO *> ioQueue = deque<IO *>();                                                           // The IO queue to store the IO requests
+    void setDirection(int track) { direction = (track >= head) ? ((track == head) ? 0 : 1) : -1; } // Set the movement direction based on the track
+    void moveHead(int step = 1) { head += direction * step; }                                      // Move the head based on the direction
+    void addIORequest(IO *io) { ioQueue.push_back(io); }                                           // Add an IO request to the IO queue
+    virtual IO *getIORequest() = 0;                                                                // Get the next IO request
 };
 
 // A First In First Out (FIFO) IO Scheduler class
