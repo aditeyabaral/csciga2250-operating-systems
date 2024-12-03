@@ -87,6 +87,58 @@ public:
     }
 };
 
+// A LOOK IO Scheduler class
+class LOOK : public IOScheduler
+{
+public:
+    // Get the next IO request from the IO queue
+    IO *getIORequest()
+    {
+        if (!ioQueue.empty()) // Check if the IO queue is not empty
+        {
+            // Initialize the closest IO request and distance
+            IO *closestIO = nullptr;
+            int closestIoIndex, distance, minDistance = INT32_MAX;
+            // Find the closest IO request in the current direction
+            for (int i = 0; i < ioQueue.size(); i++)
+            {
+                // Find the absolute distance between the head and the IO request track
+                distance = abs(ioQueue[i]->track - head);
+                if (distance < minDistance && direction * (ioQueue[i]->track - head) >= 0) // If the distance is less than the minimum distance and in the current direction
+                {
+                    minDistance = distance; // Update the minimum distance
+                    closestIO = ioQueue[i]; // Update the closest IO request
+                    closestIoIndex = i;     // Update the index of the closest IO request
+                }
+            }
+            // If no IO request is found in the current direction
+            if (closestIO == nullptr)
+            {
+                // Reverse the direction
+                direction = -direction;
+                // Find the closest IO request in the opposite direction
+                for (int i = 0; i < ioQueue.size(); i++)
+                {
+                    // Find the absolute distance between the head and the IO request track
+                    distance = abs(ioQueue[i]->track - head);
+                    if (distance < minDistance) // If the distance is less than the minimum distance
+                    {
+                        minDistance = distance; // Update the minimum distance
+                        closestIO = ioQueue[i]; // Update the closest IO request
+                        closestIoIndex = i;     // Update the index of the closest IO request
+                    }
+                }
+            }
+            // Remove the closest IO request from the IO queue
+            ioQueue.erase(ioQueue.begin() + closestIoIndex);
+            // Return the closest IO request
+            return closestIO;
+        }
+        else // The IO queue is empty
+            return nullptr;
+    }
+};
+
 // A global IOScheduler object to represent the IO scheduling algorithm
 IOScheduler *scheduler;
 
@@ -228,9 +280,9 @@ void initScheduler(char algo)
     case 'S':
         scheduler = new SSTF(); // SSTF Algorithm
         break;
-    // case 'L':
-    //     scheduler = new LOOK(); // LOOK Algorithm
-    //     break;
+    case 'L':
+        scheduler = new LOOK(); // LOOK Algorithm
+        break;
     // case 'C':
     //     scheduler = new CLOOK(); // CLOOK Algorithm
     //     break;
