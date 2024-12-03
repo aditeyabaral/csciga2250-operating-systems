@@ -148,7 +148,7 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
         }
 
         // Check if the current IO operation has completed
-        if (currentIO != nullptr && currentIO->completed)
+        if (currentIO != nullptr && currentIO->track == scheduler->head)
         {
             // Set the end time of the IO operation
             currentIO->endTime = currentTime;
@@ -196,27 +196,24 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
             // Check if the head needs to be moved
             if (scheduler->head != currentIO->track)
             {
-                scheduler->moveHead(); // Move the head in the direction
+                scheduler->moveHead(); // Move the head in the set direction
                 totalMovement++;       // Increment the total head movement
                 totalIoBusyTime++;     // Increment the total IO busy time
             }
-            else // The head is already at the track
-            {
-                // Set the completion status of the IO operation
-                currentIO->completed = true;
+            else          // The head is already at the track, no movement is needed
                 continue; // Continue scheduling at the same timestamp
-            }
         }
         currentTime++; // Increment the current time
     }
 
-    // Display the summary of the IO scheduling
+    // Display the per request summary of the IO scheduling
     while (!operations.empty())
     {
         IO *io = operations.front();
         cout << setw(5) << io->id << ": " << setw(5) << io->arrivalTime << " " << setw(5) << io->startTime << " " << setw(5) << io->endTime << "\n";
         operations.pop();
     }
+    // Display the overall summary of the IO scheduling
     cout << "SUM: " << currentTime << " " << totalMovement << " " << fixed << setprecision(4) << totalIoBusyTime / currentTime << " " << setprecision(2) << totalTurnaroundTime / numOperations << " " << totalWaitTime / numOperations << " " << maxWaitTime << "\n";
 }
 
