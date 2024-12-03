@@ -62,17 +62,19 @@ public:
     {
         if (!ioQueue.empty()) // Check if the IO queue is not empty
         {
+            // Initialize the closest IO request and distance
             IO *closestIO = nullptr;
             int closestIoIndex, distance, minDistance = INT32_MAX;
             // Find the closest IO request
             for (int i = 0; i < ioQueue.size(); i++)
             {
+                // Find the absolute distance between the head and the IO request track
                 distance = abs(ioQueue[i]->track - head);
-                if (distance < minDistance)
+                if (distance < minDistance) // If the distance is less than the minimum distance
                 {
-                    minDistance = distance;
-                    closestIO = ioQueue[i];
-                    closestIoIndex = i;
+                    minDistance = distance; // Update the minimum distance
+                    closestIO = ioQueue[i]; // Update the closest IO request
+                    closestIoIndex = i;     // Update the index of the closest IO request
                 }
             }
             // Remove the closest IO request from the IO queue
@@ -146,15 +148,10 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
         }
 
         // Check if the current IO operation has completed
-        if (currentIO != nullptr && scheduler->head == currentIO->track)
+        if (currentIO != nullptr && currentIO->completed)
         {
             // Set the end time of the IO operation
-            // Check if the head had to be moved
-            if (scheduler->direction == 0)
-                // If the head did not have to be moved, the end time is the previous time
-                currentIO->endTime = currentTime - 1;
-            else
-                currentIO->endTime = currentTime;
+            currentIO->endTime = currentTime;
             // Set the completion status of the IO operation
             currentIO->completed = true;
             // Add the turnaround time of the IO operation
@@ -205,18 +202,9 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
             }
             else // The head is already at the track
             {
-                // Set the end time of the IO operation
-                currentIO->endTime = currentTime;
                 // Set the completion status of the IO operation
                 currentIO->completed = true;
-                // Add the turnaround time of the IO operation
-                totalTurnaroundTime += currentIO->endTime - currentIO->arrivalTime;
-                // Display the completion of the IO operation
-                if (displayExecutionTraceFlag)
-                    cout << currentTime << ": " << currentIO->id << " finish " << (currentIO->endTime - currentIO->arrivalTime) << "\n";
-                // Set the current IO operation to null
-                currentIO = nullptr;
-                continue; // Process at the same time
+                continue; // Continue scheduling at the same timestamp
             }
         }
         currentTime++; // Increment the current time
