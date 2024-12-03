@@ -54,36 +54,36 @@ public:
 };
 
 // A Shortest Seek Time First (SSTF) IO Scheduler class
-// class SSTF : public IOScheduler
-// {
-// public:
-//     // Get the next IO request from the IO queue
-//     IO *getIORequest()
-//     {
-//         if (!ioQueue.empty()) // Check if the IO queue is not empty
-//         {
-//             IO *closestIO = nullptr;
-//             int closestIoIndex, distance, minDistance = INT32_MAX;
-//             // Find the closest IO request
-//             for (int i = 0; i < ioQueue.size(); i++)
-//             {
-//                 distance = abs(ioQueue[i]->track - head);
-//                 if (distance < minDistance)
-//                 {
-//                     minDistance = distance;
-//                     closestIO = ioQueue[i];
-//                     closestIoIndex = i;
-//                 }
-//             }
-//             // Remove the closest IO request from the IO queue
-//             ioQueue.erase(ioQueue.begin() + closestIoIndex);
-//             // Return the closest IO request
-//             return closestIO;
-//         }
-//         else // The IO queue is empty
-//             return nullptr;
-//     }
-// };
+class SSTF : public IOScheduler
+{
+public:
+    // Get the next IO request from the IO queue
+    IO *getIORequest()
+    {
+        if (!ioQueue.empty()) // Check if the IO queue is not empty
+        {
+            IO *closestIO = nullptr;
+            int closestIoIndex, distance, minDistance = INT32_MAX;
+            // Find the closest IO request
+            for (int i = 0; i < ioQueue.size(); i++)
+            {
+                distance = abs(ioQueue[i]->track - head);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closestIO = ioQueue[i];
+                    closestIoIndex = i;
+                }
+            }
+            // Remove the closest IO request from the IO queue
+            ioQueue.erase(ioQueue.begin() + closestIoIndex);
+            // Return the closest IO request
+            return closestIO;
+        }
+        else // The IO queue is empty
+            return nullptr;
+    }
+};
 
 // A global IOScheduler object to represent the IO scheduling algorithm
 IOScheduler *scheduler;
@@ -146,17 +146,22 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
         }
 
         // Check if the current IO operation has completed
-        if (currentIO != nullptr && currentIO->track == scheduler->head)
+        if (currentIO != nullptr && scheduler->head == currentIO->track)
         {
             // Set the end time of the IO operation
-            currentIO->endTime = currentTime;
+            // Check if the head had to be moved
+            if (scheduler->direction == 0)
+                // If the head did not have to be moved, the end time is the previous time
+                currentIO->endTime = currentTime - 1;
+            else
+                currentIO->endTime = currentTime;
             // Set the completion status of the IO operation
             currentIO->completed = true;
             // Add the turnaround time of the IO operation
             totalTurnaroundTime += currentIO->endTime - currentIO->arrivalTime;
             // Display the completion of the IO operation
             if (displayExecutionTraceFlag)
-                cout << currentTime << ": " << currentIO->id << " finish " << (currentIO->endTime - currentIO->startTime) << "\n";
+                cout << currentTime << ": " << currentIO->id << " finish " << (currentIO->endTime - currentIO->arrivalTime) << "\n";
             // Set the current IO operation to null
             currentIO = nullptr;
         }
@@ -191,13 +196,30 @@ void simulate(bool displayExecutionTraceFlag, bool displayIOQueueAndMovementDire
         // Check if the current IO operation is not null
         if (currentIO != nullptr)
         {
-            scheduler->moveHead(); // Move the head in the direction
-            totalMovement++;       // Increment the total head movement
-            totalIoBusyTime++;     // Increment the total IO busy time
+            // Check if the head needs to be moved
+            if (scheduler->head != currentIO->track)
+            {
+                scheduler->moveHead(); // Move the head in the direction
+                totalMovement++;       // Increment the total head movement
+                totalIoBusyTime++;     // Increment the total IO busy time
+            }
+            else // The head is already at the track
+            {
+                // Set the end time of the IO operation
+                currentIO->endTime = currentTime;
+                // Set the completion status of the IO operation
+                currentIO->completed = true;
+                // Add the turnaround time of the IO operation
+                totalTurnaroundTime += currentIO->endTime - currentIO->arrivalTime;
+                // Display the completion of the IO operation
+                if (displayExecutionTraceFlag)
+                    cout << currentTime << ": " << currentIO->id << " finish " << (currentIO->endTime - currentIO->arrivalTime) << "\n";
+                // Set the current IO operation to null
+                currentIO = nullptr;
+                continue; // Process at the same time
+            }
         }
-
-        // Increment the current time
-        currentTime++;
+        currentTime++; // Increment the current time
     }
 
     // Display the summary of the IO scheduling
@@ -218,9 +240,9 @@ void initScheduler(char algo)
     case 'N':
         scheduler = new FIFO(); // FIFO Algorithm
         break;
-    // case 'S':
-    //     scheduler = new SSTF(); // SSTF Algorithm
-    //     break;
+    case 'S':
+        scheduler = new SSTF(); // SSTF Algorithm
+        break;
     // case 'L':
     //     scheduler = new LOOK(); // LOOK Algorithm
     //     break;
