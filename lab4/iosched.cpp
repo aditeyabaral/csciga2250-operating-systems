@@ -104,14 +104,15 @@ public:
             {
                 // Find the absolute distance between the head and the IO request track
                 distance = abs(ioQueue[i]->track - head);
-                if (distance < minDistance && direction * (ioQueue[i]->track - head) >= 0) // If the distance is less than the minimum distance and in the current direction
+                // Check if the distance is less than the minimum distance and in the current direction
+                if (distance < minDistance && direction * (ioQueue[i]->track - head) >= 0)
                 {
                     minDistance = distance; // Update the minimum distance
                     closestIO = ioQueue[i]; // Update the closest IO request
                     closestIoIndex = i;     // Update the index of the closest IO request
                 }
             }
-            // If no IO request is found in the current direction
+            // If no IO request is found in the current direction, switch the direction and search
             if (closestIO == nullptr)
             {
                 // Reverse the direction
@@ -126,6 +127,56 @@ public:
                         minDistance = distance; // Update the minimum distance
                         closestIO = ioQueue[i]; // Update the closest IO request
                         closestIoIndex = i;     // Update the index of the closest IO request
+                    }
+                }
+            }
+            // Remove the closest IO request from the IO queue
+            ioQueue.erase(ioQueue.begin() + closestIoIndex);
+            // Return the closest IO request
+            return closestIO;
+        }
+        else // The IO queue is empty
+            return nullptr;
+    }
+};
+
+// A Circular LOOK (CLOOK) IO Scheduler class
+class CLOOK : public IOScheduler
+{
+public:
+    // Get the next IO request from the IO queue
+    IO *getIORequest()
+    {
+        if (!ioQueue.empty()) // Check if the IO queue is not empty
+        {
+            // Initialize the closest IO request and distance
+            IO *closestIO = nullptr;
+            int closestIoIndex, distance, minDistance = INT32_MAX, minTrack = INT32_MAX;
+            // Find the closest IO request in the current direction
+            for (int i = 0; i < ioQueue.size(); i++)
+            {
+                // Find the absolute distance between the head and the IO request track
+                distance = abs(ioQueue[i]->track - head);
+                // If the distance is less than the minimum distance and the track is ahead of the head
+                if (distance < minDistance && (ioQueue[i]->track - head) >= 0)
+                {
+                    minDistance = distance; // Update the minimum distance
+                    closestIO = ioQueue[i]; // Update the closest IO request
+                    closestIoIndex = i;     // Update the index of the closest IO request
+                }
+            }
+            // If no IO request is found in the current direction, wrap around and search
+            if (closestIO == nullptr)
+            {
+                // Find the IO request with the lowest track number
+                for (int i = 0; i < ioQueue.size(); i++)
+                {
+                    // If the track is less than the minimum track
+                    if (ioQueue[i]->track < minTrack)
+                    {
+                        minTrack = ioQueue[i]->track; // Update the minimum track
+                        closestIO = ioQueue[i];       // Update the closest IO request
+                        closestIoIndex = i;           // Update the index of the closest IO request
                     }
                 }
             }
@@ -283,9 +334,9 @@ void initScheduler(char algo)
     case 'L':
         scheduler = new LOOK(); // LOOK Algorithm
         break;
-    // case 'C':
-    //     scheduler = new CLOOK(); // CLOOK Algorithm
-    //     break;
+    case 'C':
+        scheduler = new CLOOK(); // CLOOK Algorithm
+        break;
     // case 'F':
     //     scheduler = new FLOOK(); // FLOOK Algorithm
     //     break;
