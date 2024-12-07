@@ -48,7 +48,7 @@ def run_test_for_algorithm(sourcefile, referencefile, test_id, algorithm, infile
 
         # Check time difference
         runtime_difference = source_run_time - reference_run_time
-        if runtime_difference >= 5:
+        if runtime_difference >= 2:
             logging.error(
                 f"[Test {test_id}, Algo={algorithm}] Implementation takes {runtime_difference} seconds more to execute"
             )
