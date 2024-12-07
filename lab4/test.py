@@ -31,7 +31,9 @@ def run_test_command(src, algorithm, infile, outfile):
     return runtime
 
 
-def run_test_for_algorithm(sourcefile, referencefile, test_id, algorithm, infile):
+def run_test_for_algorithm(
+    sourcefile, referencefile, test_id, algorithm, infile, time_limit
+):
     test_outcome = True
     try:
         # Run the test with source implementation
@@ -48,7 +50,7 @@ def run_test_for_algorithm(sourcefile, referencefile, test_id, algorithm, infile
 
         # Check time difference
         runtime_difference = source_run_time - reference_run_time
-        if runtime_difference >= 2:
+        if runtime_difference >= time_limit:
             logging.error(
                 f"[Test {test_id}, Algo={algorithm}] Implementation takes {runtime_difference} seconds more to execute"
             )
@@ -80,7 +82,7 @@ def run_test_for_algorithm(sourcefile, referencefile, test_id, algorithm, infile
             if os.path.exists(file):
                 os.remove(file)
 
-    return algorithm, test_outcome
+    return algorithm, test_outcome, test_id
 
 
 if __name__ == "__main__":
@@ -106,15 +108,22 @@ if __name__ == "__main__":
         "--num-tests",
         "-n",
         type=int,
-        help="Number of tests to run per algorithm. So value of 10 will run 10x5 = 50 tests",
+        help="Number of tests to run per algorithm, e.g: a value of 10 will run 10x5 = 50 tests",
         default=1000,
     )
     parser.add_argument(
         "--threads",
         "-t",
         type=int,
-        help="Number of threads to use for parallel testing",
+        help="Number of threads to use for parallel testing. Defaults to 5 to run each algorithm in parallel",
         default=5,
+    )
+    parser.add_argument(
+        "--time-limit",
+        "-l",
+        type=int,
+        help="Permitted ime limit difference in seconds between source and reference implementation. Defaults to 2 seconds",
+        default=2,
     )
     args = parser.parse_args()
 
@@ -147,11 +156,12 @@ if __name__ == "__main__":
                         test_id,
                         algorithm,
                         infile,
+                        args.time_limit,
                     )
                 )
 
         for future in as_completed(futures):
-            algorithm, test_outcome = future.result()
+            algorithm, test_outcome, test_id = future.result()
             if not test_outcome:
                 failed += 1
                 logging.error(f"[Test {test_id}, Algo={algorithm}] FAILED")
