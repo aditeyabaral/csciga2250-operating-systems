@@ -27,7 +27,7 @@ public:
     int direction = 1;                                                                                     // The current movement direction
     deque<IO *> ioQueue = deque<IO *>();                                                                   // The IO queue to store the IO requests
     void moveHead(int step = 1) { head += direction * step; }                                              // Move the head based on the direction
-    virtual void setDirection(int track) { direction = (track >= head) ? ((track == head) ? 0 : 1) : -1; } // Set the movement direction based on the track, is overridden for LOOK and CLOOK
+    virtual void setDirection(int track) { direction = (track >= head) ? ((track == head) ? 0 : 1) : -1; } // Set the movement direction based on the track, is overridden for LOOK and FLOOK
     virtual bool isQueueEmpty() { return ioQueue.empty(); }                                                // Check if the IO queue is empty, is overridden for FLOOK
     virtual void addIORequest(IO *io) { ioQueue.push_back(io); }                                           // Add an IO request to the IO queue, is overridden for FLOOK
     virtual IO *getIORequest() = 0;                                                                        // Get the next IO request, custom implementation for each algorithm
@@ -91,6 +91,8 @@ public:
 class LOOK : public IOScheduler
 {
 public:
+    // Set the movement direction based on the track. A no-op for LOOK
+    void setDirection(int track) override { ; }
     // Get the next IO request from the IO queue
     IO *getIORequest()
     {
