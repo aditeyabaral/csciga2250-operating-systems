@@ -27,10 +27,10 @@ public:
     int direction = 1;                                                                                     // The current movement direction
     deque<IO *> ioQueue = deque<IO *>();                                                                   // The IO queue to store the IO requests
     void moveHead(int step = 1) { head += direction * step; }                                              // Move the head based on the direction
-    virtual void setDirection(int track) { direction = (track >= head) ? ((track == head) ? 0 : 1) : -1; } // Set the movement direction based on the track
-    virtual bool isQueueEmpty() { return ioQueue.empty(); }                                                // Check if the IO queue is empty. is overridden for FLOOK
+    virtual void setDirection(int track) { direction = (track >= head) ? ((track == head) ? 0 : 1) : -1; } // Set the movement direction based on the track, is overridden for LOOK and CLOOK
+    virtual bool isQueueEmpty() { return ioQueue.empty(); }                                                // Check if the IO queue is empty, is overridden for FLOOK
     virtual void addIORequest(IO *io) { ioQueue.push_back(io); }                                           // Add an IO request to the IO queue, is overridden for FLOOK
-    virtual IO *getIORequest() = 0;                                                                        // Get the next IO request
+    virtual IO *getIORequest() = 0;                                                                        // Get the next IO request, custom implementation for each algorithm
 };
 
 // A First In First Out (FIFO) IO Scheduler class
@@ -45,6 +45,7 @@ public:
             // Get the next IO request
             IO *io = ioQueue.front();
             ioQueue.pop_front();
+            // Return the IO request
             return io;
         }
         else // The IO queue is empty
@@ -69,7 +70,7 @@ public:
             {
                 // Find the absolute distance between the head and the IO request track
                 distance = abs(ioQueue[i]->track - head);
-                if (distance < minDistance) // If the distance is less than the minimum distance
+                if (distance < minDistance) // If the absolute distance is less than the minimum distance
                 {
                     minDistance = distance; // Update the minimum distance
                     closestIO = ioQueue[i]; // Update the closest IO request
@@ -101,9 +102,9 @@ public:
             // Find the closest IO request in the current direction
             for (int i = 0; i < ioQueue.size(); i++)
             {
-                // Find the absolute distance between the head and the IO request track
+                // Find the distance between the head and the IO request track
                 distance = ioQueue[i]->track - head;
-                // Check if the distance is less than the minimum distance and in the current direction
+                // Check if the absolute distance is less than the minimum distance and in the current direction
                 if (abs(distance) < minDistance && direction * distance >= 0)
                 {
                     minDistance = abs(distance); // Update the minimum distance
@@ -121,7 +122,7 @@ public:
                 {
                     // Find the absolute distance between the head and the IO request track
                     distance = abs(ioQueue[i]->track - head);
-                    if (distance < minDistance) // If the distance is less than the minimum distance
+                    if (distance < minDistance) // If the absolute distance is less than the minimum distance
                     {
                         minDistance = distance; // Update the minimum distance
                         closestIO = ioQueue[i]; // Update the closest IO request
@@ -154,10 +155,10 @@ public:
             // Find the closest IO request in the current direction
             for (int i = 0; i < ioQueue.size(); i++)
             {
-                // Find the absolute distance between the head and the IO request track
-                distance = abs(ioQueue[i]->track - head);
-                // If the distance is less than the minimum distance and the track is ahead of the head
-                if (distance < minDistance && (ioQueue[i]->track - head) >= 0)
+                // Find the distance between the head and the IO request track
+                distance = ioQueue[i]->track - head;
+                // If the absolute distance is less than the minimum distance and the track is ahead of the head
+                if (abs(distance) < minDistance && distance >= 0)
                 {
                     minDistance = distance; // Update the minimum distance
                     closestIO = ioQueue[i]; // Update the closest IO request
@@ -192,36 +193,21 @@ public:
 // A FLOOK IO Scheduler class
 class FLOOK : public IOScheduler
 {
-    deque<IO *> *addQueue;    // The add queue to store the incoming IO requests
-    deque<IO *> *activeQueue; // The active queue to schedule the IO requests
+    deque<IO *> *addQueue = &ioQueue;             // The add queue to store the IO requests. Points to the IO queue
+    deque<IO *> *activeQueue = new deque<IO *>(); // The active queue to schedule the IO requests
 public:
-    // A constructor to initialize the FLOOK IO Scheduler
-    FLOOK()
-    {
-        // Initialise addQueue to an empty queue. TODO: Try to use the IOQueue as a pointer
-        addQueue = new deque<IO *>();
-        // Initialise activeQueue to an empty queue
-        activeQueue = new deque<IO *>();
-    }
-    void addIORequest(IO *io) override
-    {
-        // Add the IO request to the add queue
-        addQueue->push_back(io);
-    }
+    // Check if both the add and active queues are empty
     bool isQueueEmpty() override
     {
-        // Check if both the add and active queues are empty
         return addQueue->empty() && activeQueue->empty();
     }
-    // Set the movement direction based on the track
-    void setDirection(int track) override { ; } // Do nothing
+    // Set the movement direction based on the track. A no-op for FLOOK
+    void setDirection(int track) override { ; }
+    // Swap the add and active queues
     void swapQueues()
     {
-        // Swap the add and active queues
-        deque<IO *> *temp = addQueue;
-        addQueue = activeQueue;
-        activeQueue = temp;
-        direction = 1; // Set the direction to forward
+        addQueue->swap(*activeQueue); // Swap the queues in-place
+        direction = 1;                // Set the direction to forward
     }
     // Get the next IO request from the IO queue
     IO *getIORequest()
@@ -236,9 +222,9 @@ public:
         // Find the closest IO request in the current direction
         for (int i = 0; i < activeQueue->size(); i++)
         {
-            // Find the absolute distance between the head and the IO request track
+            // Find the distance between the head and the IO request track
             distance = (*activeQueue)[i]->track - head;
-            // If the distance is less than the minimum distance and in the current direction
+            // If the absolute distance is less than the minimum distance and in the current direction
             if (abs(distance) < minDistance && direction * distance >= 0)
             {
                 minDistance = abs(distance);   // Update the minimum distance
