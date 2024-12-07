@@ -744,10 +744,10 @@ New direction: -1
 7583: 156 add 429
 7600: 143 finish 478
 Current head: 225 Current track: 225 Direction: -1
-New direction: -1
+New direction: 0
 7600: 148 issue 225 225
 7600: 148 finish 373
-Current head: 225 Current track: 130 Direction: -1
+Current head: 225 Current track: 130 Direction: 0
 New direction: -1
 7600: 145 issue 130 225
 7637: 157 add 33
@@ -980,10 +980,10 @@ New direction: -1
 9540: 208 add 252
 9551: 197 finish 419
 Current head: 172 Current track: 172 Direction: -1
-New direction: -1
+New direction: 0
 9551: 199 issue 172 172
 9551: 199 finish 389
-Current head: 172 Current track: 154 Direction: -1
+Current head: 172 Current track: 154 Direction: 0
 New direction: -1
 9551: 191 issue 154 172
 9566: 209 add 5
@@ -1071,10 +1071,10 @@ New direction: 1
 10146: 219 add 444
 10159: 206 finish 760
 Current head: 444 Current track: 444 Direction: 1
-New direction: 1
+New direction: 0
 10159: 219 issue 444 444
 10159: 219 finish 13
-Current head: 444 Current track: 475 Direction: 1
+Current head: 444 Current track: 475 Direction: 0
 New direction: 1
 10159: 213 issue 475 444
 10190: 213 finish 407
@@ -1588,179 +1588,191 @@ New direction: -1
 15696: 332 add 199
 15722: 301 finish 1393
 Current head: 29 Current track: 29 Direction: 1
-New direction: 1
+New direction: 0
 15722: 320 issue 29 29
 15722: 320 finish 640
-Current head: 29 Current track: 60 Direction: 1
+Current head: 29 Current track: 21 Direction: 0
+New direction: -1
+15722: 329 issue 21 29
+15730: 329 finish 93
+Current head: 21 Current track: 60 Direction: 1
 New direction: 1
-15722: 325 issue 60 29
-15753: 325 finish 392
+15730: 325 issue 60 21
+15769: 325 finish 408
 Current head: 60 Current track: 74 Direction: 1
 New direction: 1
-15753: 315 issue 74 60
-15767: 315 finish 810
+15769: 315 issue 74 60
+15780: 333 add 4
+15783: 315 finish 826
 Current head: 74 Current track: 90 Direction: 1
 New direction: 1
-15767: 322 issue 90 74
-15780: 333 add 4
-15783: 322 finish 665
+15783: 322 issue 90 74
+15799: 322 finish 681
 Current head: 90 Current track: 186 Direction: 1
 New direction: 1
-15783: 317 issue 186 90
+15799: 317 issue 186 90
 15805: 334 add 16
-15879: 317 finish 888
+15895: 317 finish 904
 Current head: 186 Current track: 191 Direction: 1
 New direction: 1
-15879: 324 issue 191 186
-15884: 324 finish 557
+15895: 324 issue 191 186
+15900: 324 finish 573
 Current head: 191 Current track: 199 Direction: 1
 New direction: 1
-15884: 332 issue 199 191
-15892: 332 finish 196
+15900: 332 issue 199 191
+15907: 335 add 457
+15908: 332 finish 212
 Current head: 199 Current track: 226 Direction: 1
 New direction: 1
-15892: 331 issue 226 199
-15907: 335 add 457
+15908: 331 issue 226 199
 15912: 336 add 167
-15919: 331 finish 265
+15935: 331 finish 281
 Current head: 226 Current track: 233 Direction: 1
 New direction: 1
-15919: 314 issue 233 226
-15926: 314 finish 1081
+15935: 314 issue 233 226
+15942: 314 finish 1097
 Current head: 233 Current track: 246 Direction: 1
 New direction: 1
-15926: 327 issue 246 233
-15939: 327 finish 436
+15942: 327 issue 246 233
+15955: 327 finish 452
 Current head: 246 Current track: 336 Direction: 1
 New direction: 1
-15939: 321 issue 336 246
+15955: 321 issue 336 246
 15956: 337 add 75
 15995: 338 add 240
-16029: 321 finish 914
+16045: 321 finish 930
 Current head: 336 Current track: 336 Direction: 1
+New direction: 0
+16045: 328 issue 336 336
+16045: 328 finish 510
+Current head: 336 Current track: 380 Direction: 0
 New direction: 1
-16029: 328 issue 336 336
-16029: 328 finish 494
-Current head: 336 Current track: 380 Direction: 1
-New direction: 1
-16029: 316 issue 380 336
-16073: 316 finish 1094
+16045: 316 issue 380 336
+16089: 316 finish 1110
 Current head: 380 Current track: 380 Direction: 1
+New direction: 0
+16089: 323 issue 380 380
+16089: 323 finish 856
+Current head: 380 Current track: 382 Direction: 0
 New direction: 1
-16073: 323 issue 380 380
-16073: 323 finish 840
-Current head: 380 Current track: 382 Direction: 1
-New direction: 1
-16073: 326 issue 382 380
-16075: 326 finish 599
+16089: 326 issue 382 380
+16091: 326 finish 615
 Current head: 382 Current track: 404 Direction: 1
 New direction: 1
-16075: 330 issue 404 382
-16097: 330 finish 454
+16091: 330 issue 404 382
+16101: 339 add 180
+16113: 330 finish 470
 Current head: 404 Current track: 445 Direction: 1
 New direction: 1
-16097: 319 issue 445 404
-16101: 339 add 180
-16138: 319 finish 1097
+16113: 319 issue 445 404
+16154: 319 finish 1113
 Current head: 445 Current track: 500 Direction: 1
 New direction: 1
-16138: 318 issue 500 445
-16193: 318 finish 1166
-Current head: 500 Current track: 21 Direction: -1
-New direction: -1
-16193: 329 issue 21 500
+16154: 318 issue 500 445
 16194: 340 add 182
+16209: 318 finish 1182
+Current head: 500 Current track: 457 Direction: -1
+New direction: -1
+16209: 335 issue 457 500
 16229: 341 add 391
 16235: 342 add 439
 16251: 343 add 276
+16252: 335 finish 345
+Current head: 457 Current track: 240 Direction: -1
+New direction: -1
+16252: 338 issue 240 457
 16291: 344 add 64
 16339: 345 add 321
 16452: 346 add 394
 16456: 347 add 229
 16466: 348 add 449
+16469: 338 finish 474
+Current head: 240 Current track: 182 Direction: -1
+New direction: -1
+16469: 340 issue 182 240
 16500: 349 add 269
+16527: 340 finish 333
+Current head: 182 Current track: 180 Direction: -1
+New direction: -1
+16527: 339 issue 180 182
+16529: 339 finish 428
+Current head: 180 Current track: 167 Direction: -1
+New direction: -1
+16529: 336 issue 167 180
+16542: 336 finish 630
+Current head: 167 Current track: 75 Direction: -1
+New direction: -1
+16542: 337 issue 75 167
 16612: 350 add 173
+16634: 337 finish 678
+Current head: 75 Current track: 16 Direction: -1
+New direction: -1
+16634: 334 issue 16 75
 16642: 351 add 1
-16672: 329 finish 1035
-Current head: 21 Current track: 64 Direction: 1
-New direction: 1
-16672: 344 issue 64 21
+16693: 334 finish 888
+Current head: 16 Current track: 4 Direction: -1
+New direction: -1
+16693: 333 issue 4 16
 16701: 352 add 495
+16705: 333 finish 925
+Current head: 4 Current track: 64 Direction: 1
+New direction: 1
+16705: 344 issue 64 4
 16710: 353 add 86
-16715: 344 finish 424
-Current head: 64 Current track: 75 Direction: 1
-New direction: 1
-16715: 337 issue 75 64
-16726: 337 finish 770
-Current head: 75 Current track: 167 Direction: 1
-New direction: 1
-16726: 336 issue 167 75
 16742: 354 add 21
+16765: 344 finish 474
+Current head: 64 Current track: 173 Direction: 1
+New direction: 1
+16765: 350 issue 173 64
 16782: 355 add 145
 16810: 356 add 507
 16812: 357 add 258
-16818: 336 finish 906
-Current head: 167 Current track: 173 Direction: 1
+16874: 350 finish 262
+Current head: 173 Current track: 229 Direction: 1
 New direction: 1
-16818: 350 issue 173 167
-16824: 350 finish 212
-Current head: 173 Current track: 180 Direction: 1
-New direction: 1
-16824: 339 issue 180 173
-16831: 339 finish 730
-Current head: 180 Current track: 182 Direction: 1
-New direction: 1
-16831: 340 issue 182 180
-16833: 340 finish 639
-Current head: 182 Current track: 229 Direction: 1
-New direction: 1
-16833: 347 issue 229 182
-16880: 347 finish 424
-Current head: 229 Current track: 240 Direction: 1
-New direction: 1
-16880: 338 issue 240 229
-16891: 338 finish 896
-Current head: 240 Current track: 269 Direction: 1
-New direction: 1
-16891: 349 issue 269 240
+16874: 347 issue 229 173
 16906: 358 add 150
 16908: 359 add 187
-16920: 349 finish 420
+16930: 347 finish 474
+Current head: 229 Current track: 269 Direction: 1
+New direction: 1
+16930: 349 issue 269 229
+16938: 360 add 321
+16970: 349 finish 470
 Current head: 269 Current track: 276 Direction: 1
 New direction: 1
-16920: 343 issue 276 269
-16927: 343 finish 676
+16970: 343 issue 276 269
+16977: 343 finish 726
 Current head: 276 Current track: 321 Direction: 1
 New direction: 1
-16927: 345 issue 321 276
-16938: 360 add 321
-16972: 345 finish 633
+16977: 345 issue 321 276
+17022: 345 finish 683
 Current head: 321 Current track: 391 Direction: 1
 New direction: 1
-16972: 341 issue 391 321
-17042: 341 finish 813
+17022: 341 issue 391 321
+17087: 361 add 171
+17092: 341 finish 863
 Current head: 391 Current track: 394 Direction: 1
 New direction: 1
-17042: 346 issue 394 391
-17045: 346 finish 593
+17092: 346 issue 394 391
+17095: 346 finish 643
 Current head: 394 Current track: 439 Direction: 1
 New direction: 1
-17045: 342 issue 439 394
-17087: 361 add 171
-17090: 342 finish 855
+17095: 342 issue 439 394
+17115: 362 add 33
+17140: 342 finish 905
 Current head: 439 Current track: 449 Direction: 1
 New direction: 1
-17090: 348 issue 449 439
-17100: 348 finish 634
-Current head: 449 Current track: 457 Direction: 1
+17140: 348 issue 449 439
+17150: 348 finish 684
+Current head: 449 Current track: 495 Direction: 1
 New direction: 1
-17100: 335 issue 457 449
-17108: 335 finish 1201
-Current head: 457 Current track: 16 Direction: -1
-New direction: -1
-17108: 334 issue 16 457
-17115: 362 add 33
+17150: 352 issue 495 449
 17194: 363 add 285
+17196: 352 finish 495
+Current head: 495 Current track: 1 Direction: -1
+New direction: -1
+17196: 351 issue 1 495
 17318: 364 add 123
 17323: 365 add 437
 17370: 366 add 257
@@ -1769,607 +1781,599 @@ New direction: -1
 17530: 369 add 465
 17533: 370 add 478
 17545: 371 add 230
-17549: 334 finish 1744
-Current head: 16 Current track: 4 Direction: -1
-New direction: -1
-17549: 333 issue 4 16
-17561: 333 finish 1781
-Current head: 4 Current track: 1 Direction: -1
-New direction: -1
-17561: 351 issue 1 4
-17564: 351 finish 922
+17662: 372 add 123
+17690: 351 finish 1048
 Current head: 1 Current track: 4 Direction: 1
 New direction: 1
-17564: 368 issue 4 1
-17567: 368 finish 66
+17690: 368 issue 4 1
+17693: 368 finish 192
 Current head: 4 Current track: 21 Direction: 1
 New direction: 1
-17567: 354 issue 21 4
-17584: 354 finish 842
+17693: 354 issue 21 4
+17710: 354 finish 968
 Current head: 21 Current track: 33 Direction: 1
 New direction: 1
-17584: 362 issue 33 21
-17596: 362 finish 481
+17710: 362 issue 33 21
+17722: 362 finish 607
 Current head: 33 Current track: 86 Direction: 1
 New direction: 1
-17596: 353 issue 86 33
-17649: 353 finish 939
+17722: 353 issue 86 33
+17775: 353 finish 1065
 Current head: 86 Current track: 123 Direction: 1
 New direction: 1
-17649: 364 issue 123 86
-17662: 372 add 123
-17686: 364 finish 368
-Current head: 123 Current track: 125 Direction: 1
+17775: 364 issue 123 86
+17791: 373 add 397
+17812: 364 finish 494
+Current head: 123 Current track: 123 Direction: 1
+New direction: 0
+17812: 372 issue 123 123
+17812: 372 finish 150
+Current head: 123 Current track: 125 Direction: 0
 New direction: 1
-17686: 367 issue 125 123
-17688: 367 finish 222
+17812: 367 issue 125 123
+17814: 367 finish 348
 Current head: 125 Current track: 145 Direction: 1
 New direction: 1
-17688: 355 issue 145 125
-17708: 355 finish 926
+17814: 355 issue 145 125
+17833: 374 add 511
+17834: 355 finish 1052
 Current head: 145 Current track: 150 Direction: 1
 New direction: 1
-17708: 358 issue 150 145
-17713: 358 finish 807
+17834: 358 issue 150 145
+17839: 358 finish 933
 Current head: 150 Current track: 171 Direction: 1
 New direction: 1
-17713: 361 issue 171 150
-17734: 361 finish 647
+17839: 361 issue 171 150
+17841: 375 add 488
+17860: 361 finish 773
 Current head: 171 Current track: 187 Direction: 1
 New direction: 1
-17734: 359 issue 187 171
-17750: 359 finish 842
+17860: 359 issue 187 171
+17876: 359 finish 968
 Current head: 187 Current track: 230 Direction: 1
 New direction: 1
-17750: 371 issue 230 187
-17791: 373 add 397
-17793: 371 finish 248
-Current head: 230 Current track: 257 Direction: 1
-New direction: 1
-17793: 366 issue 257 230
-17820: 366 finish 450
-Current head: 257 Current track: 258 Direction: 1
-New direction: 1
-17820: 357 issue 258 257
-17821: 357 finish 1009
-Current head: 258 Current track: 285 Direction: 1
-New direction: 1
-17821: 363 issue 285 258
-17833: 374 add 511
-17841: 375 add 488
-17848: 363 finish 654
-Current head: 285 Current track: 321 Direction: 1
-New direction: 1
-17848: 360 issue 321 285
-17884: 360 finish 946
-Current head: 321 Current track: 437 Direction: 1
-New direction: 1
-17884: 365 issue 437 321
+17876: 371 issue 230 187
 17894: 376 add 70
 17913: 377 add 12
+17919: 371 finish 374
+Current head: 230 Current track: 257 Direction: 1
+New direction: 1
+17919: 366 issue 257 230
 17926: 378 add 36
+17946: 366 finish 576
+Current head: 257 Current track: 258 Direction: 1
+New direction: 1
+17946: 357 issue 258 257
+17947: 357 finish 1135
+Current head: 258 Current track: 285 Direction: 1
+New direction: 1
+17947: 363 issue 285 258
 17974: 379 add 75
+17974: 363 finish 780
+Current head: 285 Current track: 321 Direction: 1
+New direction: 1
+17974: 360 issue 321 285
 17995: 380 add 341
-18000: 365 finish 677
+18010: 360 finish 1072
+Current head: 321 Current track: 437 Direction: 1
+New direction: 1
+18010: 365 issue 437 321
+18101: 381 add 86
+18126: 365 finish 803
 Current head: 437 Current track: 465 Direction: 1
 New direction: 1
-18000: 369 issue 465 437
-18028: 369 finish 498
+18126: 369 issue 465 437
+18154: 369 finish 624
 Current head: 465 Current track: 478 Direction: 1
 New direction: 1
-18028: 370 issue 478 465
-18041: 370 finish 508
-Current head: 478 Current track: 495 Direction: 1
+18154: 370 issue 478 465
+18167: 370 finish 634
+Current head: 478 Current track: 507 Direction: 1
 New direction: 1
-18041: 352 issue 495 478
-18058: 352 finish 1357
-Current head: 495 Current track: 507 Direction: 1
-New direction: 1
-18058: 356 issue 507 495
-18070: 356 finish 1260
+18167: 356 issue 507 478
+18196: 356 finish 1386
 Current head: 507 Current track: 511 Direction: 1
 New direction: 1
-18070: 374 issue 511 507
-18074: 374 finish 241
+18196: 374 issue 511 507
+18198: 382 add 70
+18200: 374 finish 367
 Current head: 511 Current track: 488 Direction: -1
 New direction: -1
-18074: 375 issue 488 511
-18097: 375 finish 256
+18200: 375 issue 488 511
+18223: 375 finish 382
 Current head: 488 Current track: 397 Direction: -1
 New direction: -1
-18097: 373 issue 397 488
-18101: 381 add 86
-18188: 373 finish 397
-Current head: 397 Current track: 341 Direction: -1
-New direction: -1
-18188: 380 issue 341 397
-18198: 382 add 70
-18244: 380 finish 249
-Current head: 341 Current track: 123 Direction: -1
-New direction: -1
-18244: 372 issue 123 341
+18223: 373 issue 397 488
 18253: 383 add 444
 18297: 384 add 281
+18314: 373 finish 523
+Current head: 397 Current track: 341 Direction: -1
+New direction: -1
+18314: 380 issue 341 397
+18370: 380 finish 375
+Current head: 341 Current track: 86 Direction: -1
+New direction: -1
+18370: 381 issue 86 341
 18412: 385 add 247
-18462: 372 finish 800
-Current head: 123 Current track: 75 Direction: -1
-New direction: -1
-18462: 379 issue 75 123
 18483: 386 add 189
-18510: 379 finish 536
-Current head: 75 Current track: 70 Direction: -1
-New direction: -1
-18510: 376 issue 70 75
 18512: 387 add 504
-18515: 376 finish 621
-Current head: 70 Current track: 36 Direction: -1
-New direction: -1
-18515: 378 issue 36 70
 18534: 388 add 95
-18549: 378 finish 623
-Current head: 36 Current track: 12 Direction: -1
-New direction: -1
-18549: 377 issue 12 36
-18573: 377 finish 660
-Current head: 12 Current track: 70 Direction: 1
-New direction: 1
-18573: 382 issue 70 12
 18574: 389 add 166
 18596: 390 add 243
-18631: 382 finish 433
-Current head: 70 Current track: 86 Direction: 1
+18625: 381 finish 524
+Current head: 86 Current track: 75 Direction: -1
+New direction: -1
+18625: 379 issue 75 86
+18636: 379 finish 662
+Current head: 75 Current track: 70 Direction: -1
+New direction: -1
+18636: 376 issue 70 75
+18641: 376 finish 747
+Current head: 70 Current track: 36 Direction: -1
+New direction: -1
+18641: 378 issue 36 70
+18675: 378 finish 749
+Current head: 36 Current track: 12 Direction: -1
+New direction: -1
+18675: 377 issue 12 36
+18699: 377 finish 786
+Current head: 12 Current track: 70 Direction: 1
 New direction: 1
-18631: 381 issue 86 70
-18647: 381 finish 546
-Current head: 86 Current track: 95 Direction: 1
-New direction: 1
-18647: 388 issue 95 86
-18656: 388 finish 122
-Current head: 95 Current track: 189 Direction: 1
-New direction: 1
-18656: 386 issue 189 95
+18699: 382 issue 70 12
 18723: 391 add 239
-18750: 386 finish 267
-Current head: 189 Current track: 247 Direction: 1
+18757: 382 finish 559
+Current head: 70 Current track: 95 Direction: 1
 New direction: 1
-18750: 385 issue 247 189
+18757: 388 issue 95 70
+18782: 388 finish 248
+Current head: 95 Current track: 166 Direction: 1
+New direction: 1
+18782: 389 issue 166 95
 18798: 392 add 499
-18808: 385 finish 396
-Current head: 247 Current track: 281 Direction: 1
+18853: 389 finish 279
+Current head: 166 Current track: 189 Direction: 1
 New direction: 1
-18808: 384 issue 281 247
-18842: 384 finish 545
-Current head: 281 Current track: 444 Direction: 1
-New direction: 1
-18842: 383 issue 444 281
+18853: 386 issue 189 166
 18857: 393 add 427
+18876: 386 finish 393
+Current head: 189 Current track: 243 Direction: 1
+New direction: 1
+18876: 390 issue 243 189
 18902: 394 add 418
 18911: 395 add 114
-18998: 396 add 20
-19005: 383 finish 752
-Current head: 444 Current track: 504 Direction: 1
+18930: 390 finish 334
+Current head: 243 Current track: 247 Direction: 1
 New direction: 1
-19005: 387 issue 504 444
+18930: 385 issue 247 243
+18934: 385 finish 522
+Current head: 247 Current track: 281 Direction: 1
+New direction: 1
+18934: 384 issue 281 247
+18968: 384 finish 671
+Current head: 281 Current track: 444 Direction: 1
+New direction: 1
+18968: 383 issue 444 281
+18998: 396 add 20
 19026: 397 add 348
 19037: 398 add 16
-19065: 387 finish 553
-Current head: 504 Current track: 499 Direction: -1
-New direction: -1
-19065: 392 issue 499 504
-19070: 392 finish 272
-Current head: 499 Current track: 427 Direction: -1
-New direction: -1
-19070: 393 issue 427 499
 19081: 399 add 372
 19129: 400 add 239
+19131: 383 finish 878
+Current head: 444 Current track: 504 Direction: 1
+New direction: 1
+19131: 387 issue 504 444
 19142: 401 add 167
-19142: 393 finish 285
-Current head: 427 Current track: 418 Direction: -1
+19191: 387 finish 679
+Current head: 504 Current track: 499 Direction: -1
 New direction: -1
-19142: 394 issue 418 427
-19151: 394 finish 249
-Current head: 418 Current track: 348 Direction: -1
+19191: 392 issue 499 504
+19196: 392 finish 398
+Current head: 499 Current track: 427 Direction: -1
 New direction: -1
-19151: 397 issue 348 418
-19221: 397 finish 195
-Current head: 348 Current track: 243 Direction: -1
-New direction: -1
-19221: 390 issue 243 348
+19196: 393 issue 427 499
 19233: 402 add 318
 19254: 403 add 83
-19326: 390 finish 730
-Current head: 243 Current track: 239 Direction: -1
+19268: 393 finish 411
+Current head: 427 Current track: 418 Direction: -1
 New direction: -1
-19326: 391 issue 239 243
-19330: 391 finish 607
-Current head: 239 Current track: 166 Direction: -1
+19268: 394 issue 418 427
+19277: 394 finish 375
+Current head: 418 Current track: 372 Direction: -1
 New direction: -1
-19330: 389 issue 166 239
+19277: 399 issue 372 418
+19323: 399 finish 242
+Current head: 372 Current track: 348 Direction: -1
+New direction: -1
+19323: 397 issue 348 372
 19338: 404 add 425
+19347: 397 finish 321
+Current head: 348 Current track: 239 Direction: -1
+New direction: -1
+19347: 391 issue 239 348
 19375: 405 add 70
 19395: 406 add 224
-19403: 389 finish 829
-Current head: 166 Current track: 114 Direction: -1
-New direction: -1
-19403: 395 issue 114 166
 19445: 407 add 35
-19455: 395 finish 544
+19456: 391 finish 733
+Current head: 239 Current track: 239 Direction: -1
+New direction: 0
+19456: 400 issue 239 239
+19456: 400 finish 327
+Current head: 239 Current track: 167 Direction: 0
+New direction: -1
+19456: 401 issue 167 239
+19475: 408 add 140
+19528: 401 finish 386
+Current head: 167 Current track: 114 Direction: -1
+New direction: -1
+19528: 395 issue 114 167
+19581: 395 finish 670
 Current head: 114 Current track: 20 Direction: -1
 New direction: -1
-19455: 396 issue 20 114
-19475: 408 add 140
-19549: 396 finish 551
-Current head: 20 Current track: 16 Direction: -1
-New direction: -1
-19549: 398 issue 16 20
-19553: 398 finish 516
-Current head: 16 Current track: 35 Direction: 1
-New direction: 1
-19553: 407 issue 35 16
-19572: 407 finish 127
-Current head: 35 Current track: 70 Direction: 1
-New direction: 1
-19572: 405 issue 70 35
+19581: 396 issue 20 114
 19584: 409 add 498
 19589: 410 add 26
 19601: 411 add 466
 19606: 412 add 302
-19607: 405 finish 232
+19655: 413 add 138
+19675: 396 finish 677
+Current head: 20 Current track: 16 Direction: -1
+New direction: -1
+19675: 398 issue 16 20
+19679: 398 finish 642
+Current head: 16 Current track: 26 Direction: 1
+New direction: 1
+19679: 410 issue 26 16
+19689: 410 finish 100
+Current head: 26 Current track: 35 Direction: 1
+New direction: 1
+19689: 407 issue 35 26
+19698: 407 finish 253
+Current head: 35 Current track: 70 Direction: 1
+New direction: 1
+19698: 405 issue 70 35
+19708: 414 add 71
+19733: 405 finish 358
 Current head: 70 Current track: 83 Direction: 1
 New direction: 1
-19607: 403 issue 83 70
-19620: 403 finish 366
-Current head: 83 Current track: 140 Direction: 1
+19733: 403 issue 83 70
+19746: 403 finish 492
+Current head: 83 Current track: 138 Direction: 1
 New direction: 1
-19620: 408 issue 140 83
-19655: 413 add 138
-19677: 408 finish 202
-Current head: 140 Current track: 167 Direction: 1
+19746: 413 issue 138 83
+19801: 413 finish 146
+Current head: 138 Current track: 140 Direction: 1
 New direction: 1
-19677: 401 issue 167 140
-19704: 401 finish 562
-Current head: 167 Current track: 224 Direction: 1
+19801: 408 issue 140 138
+19803: 408 finish 328
+Current head: 140 Current track: 224 Direction: 1
 New direction: 1
-19704: 406 issue 224 167
-19708: 414 add 71
-19761: 406 finish 366
-Current head: 224 Current track: 239 Direction: 1
-New direction: 1
-19761: 400 issue 239 224
-19776: 400 finish 647
-Current head: 239 Current track: 318 Direction: 1
-New direction: 1
-19776: 402 issue 318 239
-19855: 402 finish 622
-Current head: 318 Current track: 372 Direction: 1
-New direction: 1
-19855: 399 issue 372 318
+19803: 406 issue 224 140
 19859: 415 add 106
-19909: 399 finish 828
-Current head: 372 Current track: 425 Direction: 1
+19887: 406 finish 492
+Current head: 224 Current track: 302 Direction: 1
 New direction: 1
-19909: 404 issue 425 372
+19887: 412 issue 302 224
 19910: 416 add 107
 19952: 417 add 227
-19962: 404 finish 624
+19965: 412 finish 359
+Current head: 302 Current track: 318 Direction: 1
+New direction: 1
+19965: 402 issue 318 302
+19981: 402 finish 748
+Current head: 318 Current track: 425 Direction: 1
+New direction: 1
+19981: 404 issue 425 318
+20041: 418 add 432
+20088: 404 finish 750
 Current head: 425 Current track: 466 Direction: 1
 New direction: 1
-19962: 411 issue 466 425
-20003: 411 finish 402
+20088: 411 issue 466 425
+20092: 419 add 326
+20129: 411 finish 528
 Current head: 466 Current track: 498 Direction: 1
 New direction: 1
-20003: 409 issue 498 466
-20035: 409 finish 451
-Current head: 498 Current track: 302 Direction: -1
-New direction: -1
-20035: 412 issue 302 498
-20041: 418 add 432
-20092: 419 add 326
+20129: 409 issue 498 466
 20152: 420 add 49
-20229: 421 add 503
-20231: 412 finish 625
-Current head: 302 Current track: 227 Direction: -1
+20161: 409 finish 577
+Current head: 498 Current track: 432 Direction: -1
 New direction: -1
-20231: 417 issue 227 302
+20161: 418 issue 432 498
+20227: 418 finish 186
+Current head: 432 Current track: 326 Direction: -1
+New direction: -1
+20227: 419 issue 326 432
+20229: 421 add 503
 20271: 422 add 194
 20274: 423 add 486
-20306: 417 finish 354
-Current head: 227 Current track: 138 Direction: -1
-New direction: -1
-20306: 413 issue 138 227
 20331: 424 add 489
-20395: 413 finish 740
-Current head: 138 Current track: 107 Direction: -1
+20333: 419 finish 241
+Current head: 326 Current track: 227 Direction: -1
 New direction: -1
-20395: 416 issue 107 138
-20426: 416 finish 516
-Current head: 107 Current track: 106 Direction: -1
+20333: 417 issue 227 326
+20432: 417 finish 480
+Current head: 227 Current track: 107 Direction: -1
 New direction: -1
-20426: 415 issue 106 107
-20427: 415 finish 568
-Current head: 106 Current track: 71 Direction: -1
-New direction: -1
-20427: 414 issue 71 106
+20432: 416 issue 107 227
 20447: 425 add 381
 20454: 426 add 335
 20460: 427 add 365
-20462: 414 finish 754
-Current head: 71 Current track: 26 Direction: -1
-New direction: -1
-20462: 410 issue 26 71
 20476: 428 add 189
 20499: 429 add 197
-20507: 410 finish 918
-Current head: 26 Current track: 49 Direction: 1
-New direction: 1
-20507: 420 issue 49 26
 20524: 430 add 279
-20530: 420 finish 378
+20552: 416 finish 642
+Current head: 107 Current track: 106 Direction: -1
+New direction: -1
+20552: 415 issue 106 107
+20553: 415 finish 694
+Current head: 106 Current track: 71 Direction: -1
+New direction: -1
+20553: 414 issue 71 106
+20588: 414 finish 880
+Current head: 71 Current track: 49 Direction: -1
+New direction: -1
+20588: 420 issue 49 71
+20610: 420 finish 458
 Current head: 49 Current track: 189 Direction: 1
 New direction: 1
-20530: 428 issue 189 49
-20670: 428 finish 194
-Current head: 189 Current track: 194 Direction: 1
-New direction: 1
-20670: 422 issue 194 189
+20610: 428 issue 189 49
 20672: 431 add 295
-20675: 422 finish 404
-Current head: 194 Current track: 197 Direction: 1
-New direction: 1
-20675: 429 issue 197 194
 20676: 432 add 224
-20678: 429 finish 179
-Current head: 197 Current track: 326 Direction: 1
-New direction: 1
-20678: 419 issue 326 197
 20705: 433 add 473
 20707: 434 add 24
-20757: 435 add 73
-20807: 419 finish 715
-Current head: 326 Current track: 335 Direction: 1
+20750: 428 finish 274
+Current head: 189 Current track: 194 Direction: 1
 New direction: 1
-20807: 426 issue 335 326
-20816: 426 finish 362
+20750: 422 issue 194 189
+20755: 422 finish 484
+Current head: 194 Current track: 197 Direction: 1
+New direction: 1
+20755: 429 issue 197 194
+20757: 435 add 73
+20758: 429 finish 259
+Current head: 197 Current track: 279 Direction: 1
+New direction: 1
+20758: 430 issue 279 197
+20840: 430 finish 316
+Current head: 279 Current track: 335 Direction: 1
+New direction: 1
+20840: 426 issue 335 279
+20844: 436 add 300
+20896: 426 finish 442
 Current head: 335 Current track: 365 Direction: 1
 New direction: 1
-20816: 427 issue 365 335
-20844: 436 add 300
-20846: 427 finish 386
+20896: 427 issue 365 335
+20905: 437 add 103
+20926: 427 finish 466
 Current head: 365 Current track: 381 Direction: 1
 New direction: 1
-20846: 425 issue 381 365
-20862: 425 finish 415
-Current head: 381 Current track: 432 Direction: 1
+20926: 425 issue 381 365
+20942: 425 finish 495
+Current head: 381 Current track: 486 Direction: 1
 New direction: 1
-20862: 418 issue 432 381
-20905: 437 add 103
-20913: 418 finish 872
-Current head: 432 Current track: 486 Direction: 1
-New direction: 1
-20913: 423 issue 486 432
+20942: 423 issue 486 381
 20960: 438 add 321
-20967: 423 finish 693
+21047: 423 finish 773
 Current head: 486 Current track: 489 Direction: 1
 New direction: 1
-20967: 424 issue 489 486
-20970: 424 finish 639
+21047: 424 issue 489 486
+21050: 424 finish 719
 Current head: 489 Current track: 503 Direction: 1
 New direction: 1
-20970: 421 issue 503 489
-20984: 421 finish 755
+21050: 421 issue 503 489
+21055: 439 add 304
+21064: 421 finish 835
 Current head: 503 Current track: 473 Direction: -1
 New direction: -1
-20984: 433 issue 473 503
-21014: 433 finish 309
+21064: 433 issue 473 503
+21094: 433 finish 389
 Current head: 473 Current track: 321 Direction: -1
 New direction: -1
-21014: 438 issue 321 473
-21055: 439 add 304
+21094: 438 issue 321 473
 21099: 440 add 306
 21149: 441 add 345
 21165: 442 add 360
-21166: 438 finish 206
-Current head: 321 Current track: 300 Direction: -1
+21192: 443 add 256
+21196: 444 add 371
+21246: 438 finish 286
+Current head: 321 Current track: 304 Direction: -1
 New direction: -1
-21166: 436 issue 300 321
-21187: 436 finish 343
+21246: 439 issue 304 321
+21263: 439 finish 208
+Current head: 304 Current track: 300 Direction: -1
+New direction: -1
+21263: 436 issue 300 304
+21267: 436 finish 423
 Current head: 300 Current track: 295 Direction: -1
 New direction: -1
-21187: 431 issue 295 300
-21192: 443 add 256
-21192: 431 finish 520
-Current head: 295 Current track: 279 Direction: -1
+21267: 431 issue 295 300
+21272: 431 finish 600
+Current head: 295 Current track: 224 Direction: -1
 New direction: -1
-21192: 430 issue 279 295
-21196: 444 add 371
-21208: 430 finish 684
-Current head: 279 Current track: 224 Direction: -1
-New direction: -1
-21208: 432 issue 224 279
-21263: 432 finish 587
-Current head: 224 Current track: 103 Direction: -1
-New direction: -1
-21263: 437 issue 103 224
+21272: 432 issue 224 295
 21300: 445 add 226
 21318: 446 add 451
 21319: 447 add 180
 21340: 448 add 219
+21343: 432 finish 667
+Current head: 224 Current track: 103 Direction: -1
+New direction: -1
+21343: 437 issue 103 224
 21358: 449 add 187
-21384: 437 finish 479
+21394: 450 add 450
+21433: 451 add 152
+21464: 437 finish 559
 Current head: 103 Current track: 73 Direction: -1
 New direction: -1
-21384: 435 issue 73 103
-21394: 450 add 450
-21414: 435 finish 657
+21464: 435 issue 73 103
+21468: 452 add 95
+21494: 435 finish 737
 Current head: 73 Current track: 24 Direction: -1
 New direction: -1
-21414: 434 issue 24 73
-21433: 451 add 152
-21463: 434 finish 756
-Current head: 24 Current track: 152 Direction: 1
-New direction: 1
-21463: 451 issue 152 24
-21468: 452 add 95
+21494: 434 issue 24 73
 21506: 453 add 53
-21591: 451 finish 158
+21543: 434 finish 836
+Current head: 24 Current track: 53 Direction: 1
+New direction: 1
+21543: 453 issue 53 24
+21572: 453 finish 66
+Current head: 53 Current track: 95 Direction: 1
+New direction: 1
+21572: 452 issue 95 53
+21592: 454 add 180
+21614: 452 finish 146
+Current head: 95 Current track: 152 Direction: 1
+New direction: 1
+21614: 451 issue 152 95
+21656: 455 add 188
+21671: 451 finish 238
 Current head: 152 Current track: 180 Direction: 1
 New direction: 1
-21591: 447 issue 180 152
-21592: 454 add 180
-21619: 447 finish 300
+21671: 447 issue 180 152
+21699: 447 finish 380
 Current head: 180 Current track: 187 Direction: 1
 New direction: 1
-21619: 449 issue 187 180
-21626: 449 finish 268
+21699: 449 issue 187 180
+21706: 449 finish 348
 Current head: 187 Current track: 219 Direction: 1
 New direction: 1
-21626: 448 issue 219 187
-21656: 455 add 188
-21658: 448 finish 318
+21706: 448 issue 219 187
+21738: 448 finish 398
 Current head: 219 Current track: 226 Direction: 1
 New direction: 1
-21658: 445 issue 226 219
-21665: 445 finish 365
+21738: 445 issue 226 219
+21745: 445 finish 445
 Current head: 226 Current track: 256 Direction: 1
 New direction: 1
-21665: 443 issue 256 226
-21695: 443 finish 503
-Current head: 256 Current track: 304 Direction: 1
+21745: 443 issue 256 226
+21775: 443 finish 583
+Current head: 256 Current track: 306 Direction: 1
 New direction: 1
-21695: 439 issue 304 256
-21743: 439 finish 688
-Current head: 304 Current track: 306 Direction: 1
-New direction: 1
-21743: 440 issue 306 304
-21745: 440 finish 646
-Current head: 306 Current track: 345 Direction: 1
-New direction: 1
-21745: 441 issue 345 306
+21775: 440 issue 306 256
 21784: 456 add 155
-21784: 441 finish 635
-Current head: 345 Current track: 360 Direction: 1
-New direction: 1
-21784: 442 issue 360 345
 21786: 457 add 106
-21799: 442 finish 634
-Current head: 360 Current track: 371 Direction: 1
-New direction: 1
-21799: 444 issue 371 360
-21810: 444 finish 614
-Current head: 371 Current track: 450 Direction: 1
-New direction: 1
-21810: 450 issue 450 371
 21817: 458 add 363
 21821: 459 add 80
-21870: 460 add 268
-21889: 450 finish 495
-Current head: 450 Current track: 451 Direction: 1
+21825: 440 finish 726
+Current head: 306 Current track: 345 Direction: 1
 New direction: 1
-21889: 446 issue 451 450
-21890: 446 finish 572
-Current head: 451 Current track: 363 Direction: -1
-New direction: -1
-21890: 458 issue 363 451
+21825: 441 issue 345 306
+21864: 441 finish 715
+Current head: 345 Current track: 360 Direction: 1
+New direction: 1
+21864: 442 issue 360 345
+21870: 460 add 268
+21879: 442 finish 714
+Current head: 360 Current track: 371 Direction: 1
+New direction: 1
+21879: 444 issue 371 360
+21890: 444 finish 694
+Current head: 371 Current track: 450 Direction: 1
+New direction: 1
+21890: 450 issue 450 371
 21901: 461 add 244
 21944: 462 add 400
-21978: 458 finish 161
-Current head: 363 Current track: 268 Direction: -1
+21969: 450 finish 575
+Current head: 450 Current track: 451 Direction: 1
+New direction: 1
+21969: 446 issue 451 450
+21970: 446 finish 652
+Current head: 451 Current track: 400 Direction: -1
 New direction: -1
-21978: 460 issue 268 363
+21970: 462 issue 400 451
+22021: 462 finish 77
+Current head: 400 Current track: 363 Direction: -1
+New direction: -1
+22021: 458 issue 363 400
 22026: 463 add 497
 22029: 464 add 83
-22062: 465 add 481
-22073: 460 finish 203
-Current head: 268 Current track: 188 Direction: -1
+22058: 458 finish 241
+Current head: 363 Current track: 268 Direction: -1
 New direction: -1
-22073: 455 issue 188 268
+22058: 460 issue 268 363
+22062: 465 add 481
 22122: 466 add 380
 22151: 467 add 440
-22153: 455 finish 497
+22153: 460 finish 283
+Current head: 268 Current track: 244 Direction: -1
+New direction: -1
+22153: 461 issue 244 268
+22166: 468 add 261
+22177: 461 finish 276
+Current head: 244 Current track: 188 Direction: -1
+New direction: -1
+22177: 455 issue 188 244
+22226: 469 add 304
+22233: 455 finish 577
 Current head: 188 Current track: 180 Direction: -1
 New direction: -1
-22153: 454 issue 180 188
-22161: 454 finish 569
+22233: 454 issue 180 188
+22239: 470 add 22
+22241: 454 finish 649
 Current head: 180 Current track: 155 Direction: -1
 New direction: -1
-22161: 456 issue 155 180
-22166: 468 add 261
-22186: 456 finish 402
+22241: 456 issue 155 180
+22266: 456 finish 482
 Current head: 155 Current track: 106 Direction: -1
 New direction: -1
-22186: 457 issue 106 155
-22226: 469 add 304
-22235: 457 finish 449
-Current head: 106 Current track: 95 Direction: -1
-New direction: -1
-22235: 452 issue 95 106
-22239: 470 add 22
-22246: 452 finish 778
-Current head: 95 Current track: 80 Direction: -1
-New direction: -1
-22246: 459 issue 80 95
-22261: 459 finish 440
-Current head: 80 Current track: 53 Direction: -1
-New direction: -1
-22261: 453 issue 53 80
+22266: 457 issue 106 155
 22282: 471 add 264
 22287: 472 add 386
-22288: 453 finish 782
-Current head: 53 Current track: 83 Direction: 1
-New direction: 1
-22288: 464 issue 83 53
-22318: 464 finish 289
-Current head: 83 Current track: 244 Direction: 1
-New direction: 1
-22318: 461 issue 244 83
+22315: 457 finish 529
+Current head: 106 Current track: 80 Direction: -1
+New direction: -1
+22315: 459 issue 80 106
 22328: 473 add 264
+22341: 459 finish 520
+Current head: 80 Current track: 83 Direction: 1
+New direction: 1
+22341: 464 issue 83 80
+22344: 464 finish 315
+Current head: 83 Current track: 261 Direction: 1
+New direction: 1
+22344: 468 issue 261 83
 22362: 474 add 311
 22422: 475 add 31
 22430: 476 add 53
 22472: 477 add 346
-22479: 461 finish 578
-Current head: 244 Current track: 261 Direction: 1
-New direction: 1
-22479: 468 issue 261 244
-22496: 468 finish 330
+22522: 468 finish 356
 Current head: 261 Current track: 264 Direction: 1
 New direction: 1
-22496: 471 issue 264 261
-22499: 471 finish 217
-Current head: 264 Current track: 304 Direction: 1
+22522: 471 issue 264 261
+22525: 471 finish 243
+Current head: 264 Current track: 264 Direction: 1
+New direction: 0
+22525: 473 issue 264 264
+22525: 473 finish 197
+Current head: 264 Current track: 304 Direction: 0
 New direction: 1
-22499: 469 issue 304 264
-22539: 469 finish 313
+22525: 469 issue 304 264
+22565: 469 finish 339
 Current head: 304 Current track: 380 Direction: 1
 New direction: 1
-22539: 466 issue 380 304
+22565: 466 issue 380 304
 22576: 478 add 172
-22615: 466 finish 493
+22632: 479 add 484
+22641: 466 finish 519
 Current head: 380 Current track: 386 Direction: 1
 New direction: 1
-22615: 472 issue 386 380
-22621: 472 finish 334
-Current head: 386 Current track: 400 Direction: 1
+22641: 472 issue 386 380
+22647: 472 finish 360
+Current head: 386 Current track: 440 Direction: 1
 New direction: 1
-22621: 462 issue 400 386
-22632: 479 add 484
-22635: 462 finish 691
-Current head: 400 Current track: 440 Direction: 1
-New direction: 1
-22635: 467 issue 440 400
+22647: 467 issue 440 386
 22670: 480 add 49
-22675: 467 finish 524
+22701: 467 finish 550
 Current head: 440 Current track: 481 Direction: 1
 New direction: 1
-22675: 465 issue 481 440
-22716: 465 finish 654
+22701: 465 issue 481 440
+22742: 465 finish 680
 Current head: 481 Current track: 497 Direction: 1
 New direction: 1
-22716: 463 issue 497 481
-22732: 463 finish 706
+22742: 463 issue 497 481
+22758: 463 finish 732
 Current head: 497 Current track: 22 Direction: -1
 New direction: -1
-22732: 470 issue 22 497
+22758: 470 issue 22 497
 22774: 481 add 88
 22865: 482 add 149
 22867: 483 add 41
@@ -2377,127 +2381,123 @@ New direction: -1
 23010: 485 add 8
 23083: 486 add 114
 23125: 487 add 430
-23207: 470 finish 968
+23233: 470 finish 994
 Current head: 22 Current track: 31 Direction: 1
 New direction: 1
-23207: 475 issue 31 22
-23216: 475 finish 794
+23233: 475 issue 31 22
+23242: 475 finish 820
 Current head: 31 Current track: 41 Direction: 1
 New direction: 1
-23216: 483 issue 41 31
-23226: 483 finish 359
+23242: 483 issue 41 31
+23252: 483 finish 385
 Current head: 41 Current track: 49 Direction: 1
 New direction: 1
-23226: 480 issue 49 41
-23234: 480 finish 564
+23252: 480 issue 49 41
+23260: 480 finish 590
 Current head: 49 Current track: 53 Direction: 1
 New direction: 1
-23234: 476 issue 53 49
-23238: 476 finish 808
+23260: 476 issue 53 49
+23264: 488 add 30
+23264: 476 finish 834
 Current head: 53 Current track: 88 Direction: 1
 New direction: 1
-23238: 481 issue 88 53
-23264: 488 add 30
-23273: 481 finish 499
+23264: 481 issue 88 53
+23289: 489 add 225
+23299: 481 finish 525
 Current head: 88 Current track: 114 Direction: 1
 New direction: 1
-23273: 486 issue 114 88
-23289: 489 add 225
-23299: 486 finish 216
+23299: 486 issue 114 88
+23325: 486 finish 242
 Current head: 114 Current track: 149 Direction: 1
 New direction: 1
-23299: 482 issue 149 114
-23334: 482 finish 469
+23325: 482 issue 149 114
+23348: 490 add 16
+23360: 482 finish 495
 Current head: 149 Current track: 172 Direction: 1
 New direction: 1
-23334: 478 issue 172 149
-23348: 490 add 16
-23357: 478 finish 781
-Current head: 172 Current track: 264 Direction: 1
+23360: 478 issue 172 149
+23383: 478 finish 807
+Current head: 172 Current track: 311 Direction: 1
 New direction: 1
-23357: 473 issue 264 172
+23383: 474 issue 311 172
 23386: 491 add 410
 23394: 492 add 20
 23430: 493 add 10
-23449: 473 finish 1121
-Current head: 264 Current track: 311 Direction: 1
-New direction: 1
-23449: 474 issue 311 264
 23456: 494 add 65
-23496: 474 finish 1134
+23522: 474 finish 1160
 Current head: 311 Current track: 346 Direction: 1
 New direction: 1
-23496: 477 issue 346 311
-23531: 477 finish 1059
+23522: 477 issue 346 311
+23557: 477 finish 1085
 Current head: 346 Current track: 363 Direction: 1
 New direction: 1
-23531: 484 issue 363 346
-23548: 484 finish 598
+23557: 484 issue 363 346
+23574: 484 finish 624
 Current head: 363 Current track: 430 Direction: 1
 New direction: 1
-23548: 487 issue 430 363
+23574: 487 issue 430 363
 23590: 495 add 449
 23604: 496 add 436
 23607: 497 add 32
-23615: 487 finish 490
-Current head: 430 Current track: 484 Direction: 1
-New direction: 1
-23615: 479 issue 484 430
 23616: 498 add 43
 23625: 499 add 485
-23669: 479 finish 1037
+23641: 487 finish 516
+Current head: 430 Current track: 484 Direction: 1
+New direction: 1
+23641: 479 issue 484 430
+23695: 479 finish 1063
 Current head: 484 Current track: 8 Direction: -1
 New direction: -1
-23669: 485 issue 8 484
-24145: 485 finish 1135
+23695: 485 issue 8 484
+24171: 485 finish 1161
 Current head: 8 Current track: 10 Direction: 1
 New direction: 1
-24145: 493 issue 10 8
-24147: 493 finish 717
+24171: 493 issue 10 8
+24173: 493 finish 743
 Current head: 10 Current track: 16 Direction: 1
 New direction: 1
-24147: 490 issue 16 10
-24153: 490 finish 805
+24173: 490 issue 16 10
+24179: 490 finish 831
 Current head: 16 Current track: 20 Direction: 1
 New direction: 1
-24153: 492 issue 20 16
-24157: 492 finish 763
+24179: 492 issue 20 16
+24183: 492 finish 789
 Current head: 20 Current track: 30 Direction: 1
 New direction: 1
-24157: 488 issue 30 20
-24167: 488 finish 903
+24183: 488 issue 30 20
+24193: 488 finish 929
 Current head: 30 Current track: 32 Direction: 1
 New direction: 1
-24167: 497 issue 32 30
-24169: 497 finish 562
+24193: 497 issue 32 30
+24195: 497 finish 588
 Current head: 32 Current track: 43 Direction: 1
 New direction: 1
-24169: 498 issue 43 32
-24180: 498 finish 564
+24195: 498 issue 43 32
+24206: 498 finish 590
 Current head: 43 Current track: 65 Direction: 1
 New direction: 1
-24180: 494 issue 65 43
-24202: 494 finish 746
+24206: 494 issue 65 43
+24228: 494 finish 772
 Current head: 65 Current track: 225 Direction: 1
 New direction: 1
-24202: 489 issue 225 65
-24362: 489 finish 1073
+24228: 489 issue 225 65
+24388: 489 finish 1099
 Current head: 225 Current track: 410 Direction: 1
 New direction: 1
-24362: 491 issue 410 225
-24547: 491 finish 1161
+24388: 491 issue 410 225
+24573: 491 finish 1187
 Current head: 410 Current track: 436 Direction: 1
 New direction: 1
-24547: 496 issue 436 410
-24573: 496 finish 969
+24573: 496 issue 436 410
+24599: 496 finish 995
 Current head: 436 Current track: 449 Direction: 1
 New direction: 1
-24573: 495 issue 449 436
-24586: 495 finish 996
+24599: 495 issue 449 436
+24612: 495 finish 1022
 Current head: 449 Current track: 485 Direction: 1
 New direction: 1
-24586: 499 issue 485 449
-24622: 499 finish 997
+24612: 499 issue 485 449
+24648: 499 finish 1023
     0:     1     1     4
     1:    30    30   130
     2:    66   382   384
@@ -2812,190 +2812,190 @@ New direction: 1
   311: 14732 14864 14868
   312: 14777 15073 15081
   313: 14794 14868 14933
-  314: 14845 15919 15926
-  315: 14957 15753 15767
-  316: 14979 16029 16073
-  317: 14991 15783 15879
-  318: 15027 16138 16193
-  319: 15041 16097 16138
+  314: 14845 15935 15942
+  315: 14957 15769 15783
+  316: 14979 16045 16089
+  317: 14991 15799 15895
+  318: 15027 16154 16209
+  319: 15041 16113 16154
   320: 15082 15722 15722
-  321: 15115 15939 16029
-  322: 15118 15767 15783
-  323: 15233 16073 16073
-  324: 15327 15879 15884
-  325: 15361 15722 15753
-  326: 15476 16073 16075
-  327: 15503 15926 15939
-  328: 15535 16029 16029
-  329: 15637 16193 16672
-  330: 15643 16075 16097
-  331: 15654 15892 15919
-  332: 15696 15884 15892
-  333: 15780 17549 17561
-  334: 15805 17108 17549
-  335: 15907 17100 17108
-  336: 15912 16726 16818
-  337: 15956 16715 16726
-  338: 15995 16880 16891
-  339: 16101 16824 16831
-  340: 16194 16831 16833
-  341: 16229 16972 17042
-  342: 16235 17045 17090
-  343: 16251 16920 16927
-  344: 16291 16672 16715
-  345: 16339 16927 16972
-  346: 16452 17042 17045
-  347: 16456 16833 16880
-  348: 16466 17090 17100
-  349: 16500 16891 16920
-  350: 16612 16818 16824
-  351: 16642 17561 17564
-  352: 16701 18041 18058
-  353: 16710 17596 17649
-  354: 16742 17567 17584
-  355: 16782 17688 17708
-  356: 16810 18058 18070
-  357: 16812 17820 17821
-  358: 16906 17708 17713
-  359: 16908 17734 17750
-  360: 16938 17848 17884
-  361: 17087 17713 17734
-  362: 17115 17584 17596
-  363: 17194 17821 17848
-  364: 17318 17649 17686
-  365: 17323 17884 18000
-  366: 17370 17793 17820
-  367: 17466 17686 17688
-  368: 17501 17564 17567
-  369: 17530 18000 18028
-  370: 17533 18028 18041
-  371: 17545 17750 17793
-  372: 17662 18244 18462
-  373: 17791 18097 18188
-  374: 17833 18070 18074
-  375: 17841 18074 18097
-  376: 17894 18510 18515
-  377: 17913 18549 18573
-  378: 17926 18515 18549
-  379: 17974 18462 18510
-  380: 17995 18188 18244
-  381: 18101 18631 18647
-  382: 18198 18573 18631
-  383: 18253 18842 19005
-  384: 18297 18808 18842
-  385: 18412 18750 18808
-  386: 18483 18656 18750
-  387: 18512 19005 19065
-  388: 18534 18647 18656
-  389: 18574 19330 19403
-  390: 18596 19221 19326
-  391: 18723 19326 19330
-  392: 18798 19065 19070
-  393: 18857 19070 19142
-  394: 18902 19142 19151
-  395: 18911 19403 19455
-  396: 18998 19455 19549
-  397: 19026 19151 19221
-  398: 19037 19549 19553
-  399: 19081 19855 19909
-  400: 19129 19761 19776
-  401: 19142 19677 19704
-  402: 19233 19776 19855
-  403: 19254 19607 19620
-  404: 19338 19909 19962
-  405: 19375 19572 19607
-  406: 19395 19704 19761
-  407: 19445 19553 19572
-  408: 19475 19620 19677
-  409: 19584 20003 20035
-  410: 19589 20462 20507
-  411: 19601 19962 20003
-  412: 19606 20035 20231
-  413: 19655 20306 20395
-  414: 19708 20427 20462
-  415: 19859 20426 20427
-  416: 19910 20395 20426
-  417: 19952 20231 20306
-  418: 20041 20862 20913
-  419: 20092 20678 20807
-  420: 20152 20507 20530
-  421: 20229 20970 20984
-  422: 20271 20670 20675
-  423: 20274 20913 20967
-  424: 20331 20967 20970
-  425: 20447 20846 20862
-  426: 20454 20807 20816
-  427: 20460 20816 20846
-  428: 20476 20530 20670
-  429: 20499 20675 20678
-  430: 20524 21192 21208
-  431: 20672 21187 21192
-  432: 20676 21208 21263
-  433: 20705 20984 21014
-  434: 20707 21414 21463
-  435: 20757 21384 21414
-  436: 20844 21166 21187
-  437: 20905 21263 21384
-  438: 20960 21014 21166
-  439: 21055 21695 21743
-  440: 21099 21743 21745
-  441: 21149 21745 21784
-  442: 21165 21784 21799
-  443: 21192 21665 21695
-  444: 21196 21799 21810
-  445: 21300 21658 21665
-  446: 21318 21889 21890
-  447: 21319 21591 21619
-  448: 21340 21626 21658
-  449: 21358 21619 21626
-  450: 21394 21810 21889
-  451: 21433 21463 21591
-  452: 21468 22235 22246
-  453: 21506 22261 22288
-  454: 21592 22153 22161
-  455: 21656 22073 22153
-  456: 21784 22161 22186
-  457: 21786 22186 22235
-  458: 21817 21890 21978
-  459: 21821 22246 22261
-  460: 21870 21978 22073
-  461: 21901 22318 22479
-  462: 21944 22621 22635
-  463: 22026 22716 22732
-  464: 22029 22288 22318
-  465: 22062 22675 22716
-  466: 22122 22539 22615
-  467: 22151 22635 22675
-  468: 22166 22479 22496
-  469: 22226 22499 22539
-  470: 22239 22732 23207
-  471: 22282 22496 22499
-  472: 22287 22615 22621
-  473: 22328 23357 23449
-  474: 22362 23449 23496
-  475: 22422 23207 23216
-  476: 22430 23234 23238
-  477: 22472 23496 23531
-  478: 22576 23334 23357
-  479: 22632 23615 23669
-  480: 22670 23226 23234
-  481: 22774 23238 23273
-  482: 22865 23299 23334
-  483: 22867 23216 23226
-  484: 22950 23531 23548
-  485: 23010 23669 24145
-  486: 23083 23273 23299
-  487: 23125 23548 23615
-  488: 23264 24157 24167
-  489: 23289 24202 24362
-  490: 23348 24147 24153
-  491: 23386 24362 24547
-  492: 23394 24153 24157
-  493: 23430 24145 24147
-  494: 23456 24180 24202
-  495: 23590 24573 24586
-  496: 23604 24547 24573
-  497: 23607 24167 24169
-  498: 23616 24169 24180
-  499: 23625 24586 24622
-SUM: 24622 24595 0.9989 567.94 518.75 1769
+  321: 15115 15955 16045
+  322: 15118 15783 15799
+  323: 15233 16089 16089
+  324: 15327 15895 15900
+  325: 15361 15730 15769
+  326: 15476 16089 16091
+  327: 15503 15942 15955
+  328: 15535 16045 16045
+  329: 15637 15722 15730
+  330: 15643 16091 16113
+  331: 15654 15908 15935
+  332: 15696 15900 15908
+  333: 15780 16693 16705
+  334: 15805 16634 16693
+  335: 15907 16209 16252
+  336: 15912 16529 16542
+  337: 15956 16542 16634
+  338: 15995 16252 16469
+  339: 16101 16527 16529
+  340: 16194 16469 16527
+  341: 16229 17022 17092
+  342: 16235 17095 17140
+  343: 16251 16970 16977
+  344: 16291 16705 16765
+  345: 16339 16977 17022
+  346: 16452 17092 17095
+  347: 16456 16874 16930
+  348: 16466 17140 17150
+  349: 16500 16930 16970
+  350: 16612 16765 16874
+  351: 16642 17196 17690
+  352: 16701 17150 17196
+  353: 16710 17722 17775
+  354: 16742 17693 17710
+  355: 16782 17814 17834
+  356: 16810 18167 18196
+  357: 16812 17946 17947
+  358: 16906 17834 17839
+  359: 16908 17860 17876
+  360: 16938 17974 18010
+  361: 17087 17839 17860
+  362: 17115 17710 17722
+  363: 17194 17947 17974
+  364: 17318 17775 17812
+  365: 17323 18010 18126
+  366: 17370 17919 17946
+  367: 17466 17812 17814
+  368: 17501 17690 17693
+  369: 17530 18126 18154
+  370: 17533 18154 18167
+  371: 17545 17876 17919
+  372: 17662 17812 17812
+  373: 17791 18223 18314
+  374: 17833 18196 18200
+  375: 17841 18200 18223
+  376: 17894 18636 18641
+  377: 17913 18675 18699
+  378: 17926 18641 18675
+  379: 17974 18625 18636
+  380: 17995 18314 18370
+  381: 18101 18370 18625
+  382: 18198 18699 18757
+  383: 18253 18968 19131
+  384: 18297 18934 18968
+  385: 18412 18930 18934
+  386: 18483 18853 18876
+  387: 18512 19131 19191
+  388: 18534 18757 18782
+  389: 18574 18782 18853
+  390: 18596 18876 18930
+  391: 18723 19347 19456
+  392: 18798 19191 19196
+  393: 18857 19196 19268
+  394: 18902 19268 19277
+  395: 18911 19528 19581
+  396: 18998 19581 19675
+  397: 19026 19323 19347
+  398: 19037 19675 19679
+  399: 19081 19277 19323
+  400: 19129 19456 19456
+  401: 19142 19456 19528
+  402: 19233 19965 19981
+  403: 19254 19733 19746
+  404: 19338 19981 20088
+  405: 19375 19698 19733
+  406: 19395 19803 19887
+  407: 19445 19689 19698
+  408: 19475 19801 19803
+  409: 19584 20129 20161
+  410: 19589 19679 19689
+  411: 19601 20088 20129
+  412: 19606 19887 19965
+  413: 19655 19746 19801
+  414: 19708 20553 20588
+  415: 19859 20552 20553
+  416: 19910 20432 20552
+  417: 19952 20333 20432
+  418: 20041 20161 20227
+  419: 20092 20227 20333
+  420: 20152 20588 20610
+  421: 20229 21050 21064
+  422: 20271 20750 20755
+  423: 20274 20942 21047
+  424: 20331 21047 21050
+  425: 20447 20926 20942
+  426: 20454 20840 20896
+  427: 20460 20896 20926
+  428: 20476 20610 20750
+  429: 20499 20755 20758
+  430: 20524 20758 20840
+  431: 20672 21267 21272
+  432: 20676 21272 21343
+  433: 20705 21064 21094
+  434: 20707 21494 21543
+  435: 20757 21464 21494
+  436: 20844 21263 21267
+  437: 20905 21343 21464
+  438: 20960 21094 21246
+  439: 21055 21246 21263
+  440: 21099 21775 21825
+  441: 21149 21825 21864
+  442: 21165 21864 21879
+  443: 21192 21745 21775
+  444: 21196 21879 21890
+  445: 21300 21738 21745
+  446: 21318 21969 21970
+  447: 21319 21671 21699
+  448: 21340 21706 21738
+  449: 21358 21699 21706
+  450: 21394 21890 21969
+  451: 21433 21614 21671
+  452: 21468 21572 21614
+  453: 21506 21543 21572
+  454: 21592 22233 22241
+  455: 21656 22177 22233
+  456: 21784 22241 22266
+  457: 21786 22266 22315
+  458: 21817 22021 22058
+  459: 21821 22315 22341
+  460: 21870 22058 22153
+  461: 21901 22153 22177
+  462: 21944 21970 22021
+  463: 22026 22742 22758
+  464: 22029 22341 22344
+  465: 22062 22701 22742
+  466: 22122 22565 22641
+  467: 22151 22647 22701
+  468: 22166 22344 22522
+  469: 22226 22525 22565
+  470: 22239 22758 23233
+  471: 22282 22522 22525
+  472: 22287 22641 22647
+  473: 22328 22525 22525
+  474: 22362 23383 23522
+  475: 22422 23233 23242
+  476: 22430 23260 23264
+  477: 22472 23522 23557
+  478: 22576 23360 23383
+  479: 22632 23641 23695
+  480: 22670 23252 23260
+  481: 22774 23264 23299
+  482: 22865 23325 23360
+  483: 22867 23242 23252
+  484: 22950 23557 23574
+  485: 23010 23695 24171
+  486: 23083 23299 23325
+  487: 23125 23574 23641
+  488: 23264 24183 24193
+  489: 23289 24228 24388
+  490: 23348 24173 24179
+  491: 23386 24388 24573
+  492: 23394 24179 24183
+  493: 23430 24171 24173
+  494: 23456 24206 24228
+  495: 23590 24599 24612
+  496: 23604 24573 24599
+  497: 23607 24193 24195
+  498: 23616 24195 24206
+  499: 23625 24612 24648
+SUM: 24648 24621 0.9989 560.70 511.46 1357
