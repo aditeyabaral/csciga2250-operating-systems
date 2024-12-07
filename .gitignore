@@ -5,6 +5,7 @@ outdir/
 linker
 scheduler
 mmu
+iosched
 out
 output
 
