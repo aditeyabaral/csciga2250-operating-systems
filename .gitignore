@@ -6,10 +6,8 @@ linker
 scheduler
 mmu
 iosched
-out
-output
 
 test.log
-generated_input
-mmu-generator
-mmu-ref
+*-generator
+*-ref
+iomake
